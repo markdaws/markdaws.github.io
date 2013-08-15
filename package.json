@@ -1,0 +1,24 @@
+{
+  "name": "markdaws.github.io",
+  "version": "0.1.0",
+  "description": "Personal website for markdaws.net",
+  "main": "index.js",
+  "scripts": {
+    "start": "node_modules/.bin/serve -p 9999 ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/markdaws/markdaws.github.io.git"
+  },
+  "keywords": [
+    "mark",
+    "dawson"
+  ],
+  "author": "Mark Dawson",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "gitHead": "ae595bab999bc2af21d8c6716b98a3d3bcd5e949",
+  "dependencies": {
+    "serve": "~1.3.0"
+  }
+}

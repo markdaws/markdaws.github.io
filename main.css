@@ -1,0 +1,58 @@
+body {
+    font-family: "Helvetica Neue"
+    min-width: 900px;
+}
+
+.header {
+    font-size: 30pt;
+    padding: 100px;
+    padding-bottom: 0px;
+}
+
+.body {
+    padding-top: 50px;
+}
+
+.header a {
+    color: #555;
+    text-decoration: none;
+}
+
+.header li {
+    font-size: 18pt;
+    font-weight: 100;
+    padding-left: 0px;
+}
+
+.header .social a {
+    font-size: 13pt;
+}
+
+.header .social li {
+    padding-right: 0px;
+}
+
+.header li a:hover {
+    color: #f00;
+}
+
+.header .firstname {
+    font-weight: 200;
+}
+
+.header .surname {
+    font-weight: 600;
+}
+
+.header .menu, .header .social {
+    margin-top: -20px;
+}
+
+.posts {
+    margin: 0 100px;
+}
+
+.banner {
+    background-image: url(/banner.jpg);
+    height:272px;
+}
