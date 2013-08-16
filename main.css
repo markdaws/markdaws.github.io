@@ -3,6 +3,10 @@ body {
     min-width: 900px;
 }
 
+a {
+    text-decoration: none;
+}
+
 .header {
     font-size: 30pt;
     padding: 100px;
@@ -55,4 +59,20 @@ body {
 .banner {
     background-image: url(/banner.jpg);
     height:272px;
+}
+
+.about, .hire-me {
+    padding-left: 100px;
+    padding-right: 100px;
+    font-size: 16pt;
+    font-weight: 200;
+}
+
+.avatar {
+    margin-top: 5px;
+    margin-right: 10px;
+    border-radius: 5px;
+    width: 250px;
+    height: 201px;
+    float: left;
 }
