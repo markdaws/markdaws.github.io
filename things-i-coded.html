@@ -1,142 +1,152 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>markdaws.net - Personal website for Mark Dawson</title>
-    <link rel="stylesheet" href="css/bootstrap.min.css" type="text/css" />
-    <link rel="stylesheet" href="css/main.css" type="text/css" />
-</head>
-<body>
+    <head>
+        <title>markdaws.net - Personal website for Mark Dawson</title>
+        <link rel="stylesheet" href="css/bootstrap.min.css" type="text/css" />
+        <link rel="stylesheet" href="css/main.css" type="text/css" />
+    </head>
+    <body>
 
-    <div class="header clearfix">
-        <p>
-            <a href="/">
-                <span class="firstname">MARK</span><span class="surname">DAWSON</span>
-            </a>
-        </p>
-        <ul class="menu list-inline pull-left">
-            <li><a href="/about.html">ABOUT</a></li>
-            <li><a href="/things-i-coded.html">THINGS I CODED</a></li>
-            <li><a href="/hire-me.html">HIRE ME</a></li>
-            <li><a href="/photography.html">PHOTOGRAPHY</a></li>
-        </ul>
+        <div class="header clearfix">
+            <p>
+                <a href="/">
+                    <span class="firstname">MARK</span><span class="surname">DAWSON</span>
+                </a>
+            </p>
+            <ul class="menu list-inline pull-left">
+                <li><a href="/about.html">ABOUT</a></li>
+                <li><a href="/things-i-coded.html">THINGS I CODED</a></li>
+                <li><a href="/hire-me.html">HIRE ME</a></li>
+                <li><a href="/photography.html">PHOTOGRAPHY</a></li>
+            </ul>
 
-        <ul class="social list-inline pull-right">
-            <li><a href="http://github.com/markdaws">Github</a></li>
-            <li><a href="http://twitter.com/markdaws">Twitter</a></li>
-            <li><a href="http://npmjs.org/~markdaws">NPM</a></li>
-        </ul>
-    </div>
-    <div class="banner"></div>
-    <div class="body photography"
-         style="padding:100px;padding-top:50px">
+            <ul class="social list-inline pull-right">
+                <li><a href="http://github.com/markdaws">Github</a></li>
+                <li><a href="http://twitter.com/markdaws">Twitter</a></li>
+                <li><a href="http://npmjs.org/~markdaws">NPM</a></li>
+            </ul>
+        </div>
+        <div class="banner"></div>
+        <div class="body photography"
+             style="padding:100px;padding-top:50px">
 
-        <p style="text-align:left;font-size:16pt;font-weight:200;padding-bottom:0px;">
-            Below are a couple of projects I have worked on in the last few years (in no particular order). My main skills lie around being able to pick up new technologies quickly and apply a high standard of engineering rigour. At Microsoft I took a lot of research ideas and features and helped turn them into shipping code.
-        </p>
+            <p style="text-align:left;font-size:16pt;font-weight:200;padding-bottom:0px;">
+                Below are a couple of projects I have worked on in the last few years (in no particular order). My main skills lie around being able to pick up new technologies quickly and apply a high standard of engineering rigour. At Microsoft I took a lot of research ideas and features and helped turn them into shipping code.
+            </p>
 
-        <div class="project-container">
-            <a href="http://photosynth.net"><h3 class="project-title">Photosynth</h3></a>
-            <div class="clearfix">
-                <a href="http://photosynth.net"><img title="Picture from: http://www.openbible.info/blog/2007/04/virtual-tours-with-photosynth/" class="project-image" src="images/photosynth.jpg" style="width:500px;height:241px;"/></a>
-                <p class="project-description"><a href="http://photosynth.com">Photosynth</a> is an application that lets you upload regular 2D images from your camera and reconstructs the 3D locations and scene geometry, allowing for an entirely new photo viewing experience. I architected and coded the Silverlight 3D viewer, there is a cool story behind the origin of the viewer (I'll leave that for another day), but basically I coded most of the viewer as a side project in my spare time then transitioned full time into the Photosynth team. This codebase was also used to show photosynths in Bing maps and also is used in the Windows Phone version of the application. I was also responsible for the JavaScript API for the viewer and all of the viewer embed framework. As part of this project I wrote my own 3D math and graphics library (an early version can be seen here: <a href="http://kit3d.codeplex.com/">http://kit3d.codeplex.com/</a>).  Before leaving Microsoft I also shipped a WebGL and CSS3 version of the panorama features of this app to let iOS users view their panoramas without having to use the Silverlight viewer. The basis of that codebase can be seen in this project: <a href="https://github.com/markdaws/jsblit">https://github.com/markdaws/jsblit</a>.</p>
+            <div class="project-container">
+                <a href="http://photosynth.net"><h3 class="project-title">Photosynth</h3></a>
+                <div class="clearfix">
+                    <a href="http://photosynth.net"><img title="Picture from: http://www.openbible.info/blog/2007/04/virtual-tours-with-photosynth/" class="project-image" src="images/photosynth.jpg" style="width:500px;height:241px;"/></a>
+                    <p class="project-description"><a href="http://photosynth.com">Photosynth</a> is an application that lets you upload regular 2D images from your camera and reconstructs the 3D locations and scene geometry, allowing for an entirely new photo viewing experience. I architected and coded the Silverlight 3D viewer, there is a cool story behind the origin of the viewer (I'll leave that for another day), but basically I coded most of the viewer as a side project in my spare time then transitioned full time into the Photosynth team. This codebase was also used to show photosynths in Bing maps and also is used in the Windows Phone version of the application. I was also responsible for the JavaScript API for the viewer and all of the viewer embed framework. As part of this project I wrote my own 3D math and graphics library (an early version can be seen here: <a href="http://kit3d.codeplex.com/">http://kit3d.codeplex.com/</a>).  Before leaving Microsoft I also shipped a WebGL and CSS3 version of the panorama features of this app to let iOS users view their panoramas without having to use the Silverlight viewer. The basis of that codebase can be seen in this project: <a href="https://github.com/markdaws/jsblit">https://github.com/markdaws/jsblit</a>.</p>
+                </div>
+                <div class="clearfix skill-list">
+                    <span class="pull-left">SKILLS:</span>
+                    <ul class="list-inline project-technologies pull-left">
+                        <li>WebGL</li>
+                        <li>CSS3</li>
+                        <li>C#</li>
+                        <li>JavaScript</li>
+                        <li>Silverlight</li>
+                        <li>Windows Phone</li>
+                        <li>Software Architecture</li>
+                        <li>3D Graphics</li>
+                        <li>Performance</li>
+                        <li>Teamwork</li>
+                    </ul>
+                </div>
             </div>
-            <div class="clearfix skill-list">
-                <span class="pull-left">SKILLS:</span>
-                <ul class="list-inline project-technologies pull-left">
-                    <li>WebGL</li>
-                    <li>CSS3</li>
-                    <li>C#</li>
-                    <li>JavaScript</a>
-                    <li>Silverlight</li>
-                    <li>Windows Phone</a>
-                    <li>Software Architecture</li>
-                    <li>3D Graphics</li>
-                    <li>Performance</li>
-                    <li>Teamwork</li>
-                </ul>
+
+            <div class="project-container">
+                <a href="http://techcrunch.com/2012/05/31/looks-like-pinterest-takes-on-evernote-clipboard-launches-its-web-clipping-service-to-all/"><h3 class="project-title">Clipboard.com</h3></a>
+                <div class="clearfix">
+                    <a href="http://techcrunch.com/2012/05/31/looks-like-pinterest-takes-on-evernote-clipboard-launches-its-web-clipping-service-to-all/"><img class="project-image" src="images/clipboard.jpg" style="width:500px;height:342px;" /></a>
+                    <p class="project-description">I joined <a href="http://clipboard.com">Clipboard.com</a> as one of its first engineers. Clipboard was the best and easiest way to save parts of a webpage, such as text, video and HTML and was founded in 2011 by <a href="http://en.wikipedia.org/wiki/Gary_William_Flake">Gary W. Flake</a> and had several high profile investors, such as Andreessen Horowitz and Index Ventures. Clipboard.com was named one of Time's <a href="http://techland.time.com/2012/09/18/50-best-websites-2012/slide/clipboard/">50 best websites of 2012</a>. Being an engineer in a startup meant working through the full stack from DB -> backend services -> client, with an array of technologies including <a href="http://basho.com/riak/">riak</a>, <a href="http://redis.io/">redis</a> and <a href="http://nodejs.org">node.js</a>.  I was primarily responsible for architecting and coding a number of backend services such as our thumbnailing and work queues as well as architecting the web client.  Clipboard.com was recently acquired by <a href="http://salesforce.com">salesforce.com</a>.</p>
+                </div>
+                <div class="clearfix skill-list">
+                    <span class="pull-left">SKILLS:</span>
+                    <ul class="list-inline project-technologies pull-left">
+                        <li>node.js</li>
+                        <li>JavaScript</li>
+                        <li>backbone.js</li>
+                        <li>Software Architecture</li>
+                        <li>Backend Services
+                        <li>redis</li>
+                        <li>Managing Vendors</li>
+                        <li>Startup life</li>
+                        <li>dev-ops</li>
+                    </ul>
+                </div>
             </div>
+
+            <div class="project-container">
+                <a href="http://research.microsoft.com/en-us/um/people/kopf/street_slide/"><h3 class="project-title">Streetslide</h3></a>
+                <div class="clearfix">
+                    <a href="http://research.microsoft.com/en-us/um/people/kopf/street_slide/"><img title="Photo from: http://timwantland.com/Bing-iPhone-Application" class="project-image" src="images/streetslide_2.png" style="width:500px;height:281px;" /></a>
+                    <p class="project-description">Streetslide started off as a <a href="http://research.microsoft.com/en-us/um/people/kopf/street_slide/">research project</a> in the Microsoft Research division. It's a novel way of viewing street level imagery, allowing users to quickly navigate large distances instead of having to the the usual, next, next, next clicking you normally have to do in panorama map viewers.  My role in this project was to take the concept and develop an iphone version, working with researchers, designers and other engineers to help ship a compelling product. I created the initial iphone version and then with other members of the Bing maps team integrated this into the <a href="https://itunes.apple.com/us/app/bing/id345323231?mt=8">Bing iOS</a> application. The codebase was also used to view high resolution panoramas in the Microsoft Photosynth <a href="https://itunes.apple.com/us/app/photosynth/id430065256?mt=8">iphone viewer</a>. To see the app in action, check out this <a href="http://youtu.be/hzWT9ClzeVk?t=2m1s">video</a>.</p>
+                </div>
+                <div class="clearfix skill-list">
+                    <span class="pull-left">SKILLS:</span>
+                    <ul class="list-inline project-technologies pull-left">
+                        <li>C++</li>
+                        <li>Objective-C</li>
+                        <li>Software Architecture</li>
+                        <li>3D Graphics</li>
+                        <li>iOS</li>
+                        <li>Teamwork</li>
+                        <li>Prototyping</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="project-container">
+                <a href="http://www.ted.com/talks/blaise_aguera.html"><h3 class="project-title">Demos (TED + Where 2.0)</h3></a>
+                <div class="clearfix">
+                    <a href="http://www.ted.com/talks/blaise_aguera.html"><img class="project-image" src="images/ted.jpg" style="width:500px;height:333px;" title="Picture from: http://www.ted.com/talks/blaise_aguera.html" /></a>
+                    <p class="project-description">As part of my responsibilities in the Bing Advanced Engineering team, I helped prove out future product ideas and direction. Part of this was to work with my boss, <a href="http://en.wikipedia.org/wiki/Blaise_Ag%C3%BCera_y_Arcas">Blaise Aguera y Arcas</a> to develop demos that could be used to promote our future product vision (nothing helps sell an idea and inspire others as much as a demo can). Two of the most interesting demos were Blaise's <a href="http://www.ted.com/talks/blaise_aguera.html">TED Augmented Reality</a> demo and the <a href="http://youtu.be/4X9u4JG9H6E?t=6m50s">Where2.0</a> conference demo. For the TED demo I worked on various features, the most extensive was integrating seamless transitions from human scale bubbles into the <a href="http://www.worldwidetelescope.org/Home.aspx">Worldwide Telescope</a> imagery (watch the video for more details). For the <a href="http://youtu.be/4X9u4JG9H6E?t=6m50s">Where 2.0 demo</a> I took the existing Bing map control and build a seamless experience from a 2D map view, to a 3D view of a street down into the inside of a store where you could then view panoramas and transitions of the stores interior, including close ups of the pictures on the store wall.  Spend a few minutes watching the <a href="http://youtu.be/4X9u4JG9H6E?t=6m50s">video</a>, it really is a compelling demo.</p>
+                </div>
+                <div class="clearfix skill-list">
+                    <span class="pull-left">SKILLS:</span>
+                    <ul class="list-inline project-technologies pull-left">
+                        <li>C#</li>
+                        <li>Silverlight</li>
+                        <li>3D Graphics</li>
+                        <li>Rapid Prototyping</li>
+                        <li>Teamwork</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="project-container">
+                <a href="http://www.lutron.com/en-US/Company-Info/Pages/AboutUS/OurStory.aspx"><h3 class="project-title">Lutron G7000</h3></a>
+                <div class="clearfix">
+                    <a alt="foo" href="http://www.lutron.com/en-US/Company-Info/Pages/AboutUS/OurStory.aspx"><img class="project-image" src="images/g7000.jpg" style="width:500px;height:170px;" title="Picture from: http://www.lutron.com/en-US/Products/Pages/WholeBuildingSystems/Grafik5000-6000-7000/Overview.aspx" /></a>
+                    <p class="project-description"><a href="http://lutron.com">Lutron</a> is a lighting control company, founded by an amazing guy called Joel Spira who invented the first solid state dimmer.  I worked in the commercial systems team working mainly on the G7000 product that controls lighting for large spaces such as convention centers and stadiums.  I helped architect and write the client web UI, a mix of JavaScript and SVG that allowed realtime feedback and control of entire buildings. At the time this was developed it was probably one of the most advanced "single page apps" and AJAX style apps around. As well as coding I travelled to give presentations and work directly with customers, such as the New York Times. It was during my time at Lutron that I learned the benefits of TDD and helped train other engineers in the practise.</p>
+                </div>
+                <div class="clearfix skill-list">
+                    <span class="pull-left">SKILLS:</span>
+                    <ul class="list-inline project-technologies pull-left">
+                        <li>C#</li>
+                        <li>WinForms</li>
+                        <li>SVG</li>
+                        <li>JavaScript</li>
+                        <li>Presenting</li>
+                        <li>TDD</li>
+                        <li>Coaching</li>
+                    </ul>
+                </div>
+            </div>
+
         </div>
 
-        <div class="project-container">
-            <a href="http://techcrunch.com/2012/05/31/looks-like-pinterest-takes-on-evernote-clipboard-launches-its-web-clipping-service-to-all/"><h3 class="project-title">Clipboard.com</h3></a>
-            <div class="clearfix">
-                <a href="http://techcrunch.com/2012/05/31/looks-like-pinterest-takes-on-evernote-clipboard-launches-its-web-clipping-service-to-all/"><img class="project-image" src="images/clipboard.jpg" style="width:500px;height:342px;" /></a>
-                <p class="project-description">I joined <a href="http://clipboard.com">Clipboard.com</a> as one of its first engineers. Clipboard was the best and easiest way to save parts of a webpage, such as text, video and HTML and was founded in 2011 by <a href="http://en.wikipedia.org/wiki/Gary_William_Flake">Gary W. Flake</a> and had several high profile investors, such as Andreessen Horowitz and Index Ventures. Clipboard.com was named one of Time's <a href="http://techland.time.com/2012/09/18/50-best-websites-2012/slide/clipboard/">50 best websites of 2012</a>. Being an engineer in a startup meant working through the full stack from DB -> backend services -> client, with an array of technologies including <a href="http://basho.com/riak/">riak</a>, <a href="http://redis.io/">redis</a> and <a href="http://nodejs.org">node.js</a>.  I was primarily responsible for architecting and coding a number of backend services such as our thumbnailing and work queues as well as architecting the web client.  Clipboard.com was recently acquired by <a href="http://salesforce.com">salesforce.com</a>.</p>
-            </div>
-            <div class="clearfix skill-list">
-                <span class="pull-left">SKILLS:</span>
-                <ul class="list-inline project-technologies pull-left">
-                    <li>node.js</li>
-                    <li>JavaScript</li>
-                    <li>backbone.js</li>
-                    <li>Software Architecture</li>
-                    <li>Backend Services
-                    <li>redis</li>
-                    <li>Managing Vendors</li>
-                    <li>Startup life</li>
-                    <li>dev-ops</li>
-                </ul>
-            </div>
-        </div>
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-        <div class="project-container">
-            <a href="http://research.microsoft.com/en-us/um/people/kopf/street_slide/"><h3 class="project-title">Streetslide</h3></a>
-            <div class="clearfix">
-                <a href="http://research.microsoft.com/en-us/um/people/kopf/street_slide/"><img title="Photo from: http://timwantland.com/Bing-iPhone-Application" class="project-image" src="images/streetslide_2.png" style="width:500px;height:281px;" /></a>
-                <p class="project-description">Streetslide started off as a <a href="http://research.microsoft.com/en-us/um/people/kopf/street_slide/">research project</a> in the Microsoft Research division. It's a novel way of viewing street level imagery, allowing users to quickly navigate large distances instead of having to the the usual, next, next, next clicking you normally have to do in panorama map viewers.  My role in this project was to take the concept and develop an iphone version, working with researchers, designers and other engineers to help ship a compelling product. I created the initial iphone version and then with other members of the Bing maps team integrated this into the <a href="https://itunes.apple.com/us/app/bing/id345323231?mt=8">Bing iOS</a> application. The codebase was also used to view high resolution panoramas in the Microsoft Photosynth <a href="https://itunes.apple.com/us/app/photosynth/id430065256?mt=8">iphone viewer</a>. To see the app in action, check out this <a href="http://youtu.be/hzWT9ClzeVk?t=2m1s">video</a>.</p>
-            </div>
-            <div class="clearfix skill-list">
-                <span class="pull-left">SKILLS:</span>
-                <ul class="list-inline project-technologies pull-left">
-                    <li>C++</li>
-                    <li>Objective-C</li>
-                    <li>Software Architecture</li>
-                    <li>3D Graphics</li>
-                    <li>iOS</li>
-                    <li>Teamwork</li>
-                    <li>Prototyping</li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="project-container">
-            <a href="http://www.ted.com/talks/blaise_aguera.html"><h3 class="project-title">Demos (TED + Where 2.0)</h3></a>
-            <div class="clearfix">
-                <a href="http://www.ted.com/talks/blaise_aguera.html"><img class="project-image" src="images/ted.jpg" style="width:500px;height:333px;" title="Picture from: http://www.ted.com/talks/blaise_aguera.html" /></a>
-                <p class="project-description">As part of my responsibilities in the Bing Advanced Engineering team, I helped prove out future product ideas and direction. Part of this was to work with my boss, <a href="http://en.wikipedia.org/wiki/Blaise_Ag%C3%BCera_y_Arcas">Blaise Aguera y Arcas</a> to develop demos that could be used to promote our future product vision (nothing helps sell an idea and inspire others as much as a demo can). Two of the most interesting demos were Blaise's <a href="http://www.ted.com/talks/blaise_aguera.html">TED Augmented Reality</a> demo and the <a href="http://youtu.be/4X9u4JG9H6E?t=6m50s">Where2.0</a> conference demo. For the TED demo I worked on various features, the most extensive was integrating seamless transitions from human scale bubbles into the <a href="http://www.worldwidetelescope.org/Home.aspx">Worldwide Telescope</a> imagery (watch the video for more details). For the <a href="http://youtu.be/4X9u4JG9H6E?t=6m50s">Where 2.0 demo</a> I took the existing Bing map control and build a seamless experience from a 2D map view, to a 3D view of a street down into the inside of a store where you could then view panoramas and transitions of the stores interior, including close ups of the pictures on the store wall.  Spend a few minutes watching the <a href="http://youtu.be/4X9u4JG9H6E?t=6m50s">video</a>, it really is a compelling demo.</p>
-            </div>
-            <div class="clearfix skill-list">
-                <span class="pull-left">SKILLS:</span>
-                <ul class="list-inline project-technologies pull-left">
-                    <li>C#</li>
-                    <li>Silverlight</li>
-                    <li>3D Graphics</li>
-                    <li>Rapid Prototyping</li>
-                    <li>Teamwork</li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="project-container">
-            <a href="http://www.lutron.com/en-US/Company-Info/Pages/AboutUS/OurStory.aspx"><h3 class="project-title">Lutron G7000</h3></a>
-            <div class="clearfix">
-                <a alt="foo" href="http://www.lutron.com/en-US/Company-Info/Pages/AboutUS/OurStory.aspx"><img class="project-image" src="images/g7000.jpg" style="width:500px;height:170px;" title="Picture from: http://www.lutron.com/en-US/Products/Pages/WholeBuildingSystems/Grafik5000-6000-7000/Overview.aspx" /></a>
-                <p class="project-description"><a href="http://lutron.com">Lutron</a> is a lighting control company, founded by an amazing guy called Joel Spira who invented the first solid state dimmer.  I worked in the commercial systems team working mainly on the G7000 product that controls lighting for large spaces such as convention centers and stadiums.  I helped architect and write the client web UI, a mix of JavaScript and SVG that allowed realtime feedback and control of entire buildings. At the time this was developed it was probably one of the most advanced "single page apps" and AJAX style apps around. As well as coding I travelled to give presentations and work directly with customers, such as the New York Times. It was during my time at Lutron that I learned the benefits of TDD and helped train other engineers in the practise.</p>
-            </div>
-            <div class="clearfix skill-list">
-                <span class="pull-left">SKILLS:</span>
-                <ul class="list-inline project-technologies pull-left">
-                    <li>C#</li>
-                    <li>WinForms</li>
-                    <li>SVG</li>
-                    <li>JavaScript</li>
-                    <li>Presenting</li>
-                    <li>TDD</li>
-                    <li>Coaching</li>
-                </ul>
-            </div>
-        </div>
-
-    </div>
-</body>
+            ga('create', 'UA-43859159-1', 'markdaws.net');
+            ga('send', 'pageview');
+        </script>
+    </body>
 </html>
