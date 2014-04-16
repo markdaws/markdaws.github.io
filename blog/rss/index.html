@@ -1,78 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[markdaws.net]]></title><description><![CDATA[Musings by a dude on the internet]]></description><link>http://my-ghost-blog.com/</link><generator>Ghost v0.4.2</generator><lastBuildDate>Wed, 16 Apr 2014 19:08:29 GMT</lastBuildDate><atom:link href="http://my-ghost-blog.com/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Testing Ghost]]></title><description><![CDATA[<p>This is some markdown!  </p>
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[markdaws.net]]></title><description><![CDATA[Musings by a dude on the internet]]></description><link>http://markdaws.net/blog/</link><generator>Ghost v0.4.2</generator><lastBuildDate>Wed, 16 Apr 2014 22:33:26 GMT</lastBuildDate><atom:link href="http://markdaws.net/blog/rss/" rel="self" type="application/rss+xml"/><ttl>60</ttl><item><title><![CDATA[Fast, free blog courtesy of Ghost, GitHub and Buster]]></title><description><![CDATA[<h3 id="owningyourblogcontentisimportant">Owning your Blog content is important</h3>
 
-<h2 id="foo">Foo</h2>
+<p>Blogging platforms du jour come and go and if you have put a lot of time and effort in to writing content on a blog you don't want to see it disappear when a service is shut down or merged with another company.  </p>
 
-<ul>
-<li>what</li>
-<li>more</li>
-</ul>
-
-<p><code> <br />
-var x = 3; <br />
-</code></p>]]></description><link>http://my-ghost-blog.com/testing-ghost/</link><guid isPermaLink="false">238ba3d1-26f3-487c-ab51-051e4caae9e5</guid><dc:creator><![CDATA[Mark Dawson]]></dc:creator><pubDate>Wed, 16 Apr 2014 18:59:44 GMT</pubDate></item><item><title><![CDATA[Welcome to Ghost]]></title><description><![CDATA[<p>You're live! Nice. We've put together a little post to introduce you to the Ghost editor and get you started. You can manage your content by signing in to the admin area at <code>&lt;your blog URL&gt;/ghost/</code>. When you arrive, you can select this post from a list on the left and see a preview of it on the right. Click the little pencil icon at the top of the preview to edit this post and read the next section!</p>
-
-<h2 id="gettingstarted">Getting Started</h2>
-
-<p>Ghost uses something called Markdown for writing. Essentially, it's a shorthand way to manage your post formatting as you write!</p>
-
-<p>Writing in Markdown is really easy. In the left hand panel of Ghost, you simply write as you normally would. Where appropriate, you can use <em>shortcuts</em> to <strong>style</strong> your content. For example, a list:</p>
+<p>For me, I've had several blogs, back when I could call myself a C# expert, I wrote lots of detailed articles on the internals of C# on my Microsoft Live Spaces blog (anyone remember that platform), alas it has long been shuttered and all the content I produced, lost. This time I wanted to be the last time I setup a blog, along with several criteria:</p>
 
 <ul>
-<li>Item number one</li>
-<li>Item number two
-<ul><li>A nested item</li></ul></li>
-<li>A final item</li>
+<li>It should be easy to completely control the look and feel of my blog</li>
+<li>I can run the blog locally if needed</li>
+<li>Minimal cost to host the blog</li>
+<li>Fast and capable of handling traffic spikes (never know when HN comes calling :P)</li>
 </ul>
 
-<p>or with numbers!</p>
+<h3 id="solutiongithubpagesghostbustercostd0">Solution - Github Pages + Ghost + Buster - Cost $0</h3>
+
+<p>What I ended up with was using the following services:  </p>
+
+<h4 id="ghost">Ghost</h4>
+
+<p><a href='https://ghost.org/' >Ghost</a> is a fully featured blogging platform written on <a href='http://nodejs.org/' >node.js</a> It is easy to quickly create beautiful looking websites, I liked it because of how simple it was to get up and running, plus the source code is also available that allows easy modification if needed.  </p>
+
+<p>By default, Ghost requires a server to host the service, but I didn't want to have the hassle of setting up my own server, or opening a hosting account with a company that hosts Ghost blogs, so instead I went to route of turning my Ghost installation into a static website, which I can easily host for free. </p>
+
+<h4 id="busterghoststaticsitegenerator">Buster - Ghost -> static site generator</h4>
+
+<p><a href='https://github.com/axitkhurana/buster' >Buster</a> can be pointed at any Ghost blog, either one hosted on an external website, or one running locally on your own computer and output a directory with the static content of the site, HTML, CSS, images, fonts etc.  </p>
+
+<p>This is great and simplifies the hosting options.  Simply install Ghost locally, then run Buster on it to generate a static site, the final step is to then find somewhere to host your static site.  </p>
+
+<h4 id="githubwebsitehosting">GitHub - website hosting</h4>
+
+<p><a href='http://github.com/' >Github</a> is a service mainly for programmers that allows them to store and share code.  However one nice feature of GitHub is something called <a href='https://pages.github.com/' >GitHub Pages</a> that allows you to easily create static websites for your projects.  I used GitHub pages to host the static Ghost site we generated using Buster.</p>
+
+<h3 id="settingupyourblog">Setting Up Your Blog</h3>
+
+<p><strong>NOTE:</strong> I'm assuming you are not afraid of the command line and some HTML/CSS tweaking, if you are this solution is not for you.</p>
+
+<p>Below are the steps I followed to get this blog up and running, it was suprising painless:</p>
 
 <ol>
-<li>Remember to buy some milk  </li>
-<li>Drink the milk  </li>
-<li>Tweet that I remembered to buy the milk, and drank it</li>
+<li>Create a <a href='http://github.com/' >GitHub</a> account  </li>
+<li>Install <a href='http://docs.ghost.org/installation/' >Ghost</a> locally on your computer  </li>
+<li>Install <a href='http://www.metacotta.com/ghost-static-site-generation-with-buster/' >Buster</a>  </li>
+<li>Setup <a href='https://pages.github.com/' >GitHub Pages</a> for the repository you are going to use to host the blog. <strong>BONUS</strong>: if you want to setup a custom domain, follow <a href='https://help.github.com/articles/setting-up-a-custom-domain-with-pages' >these</a> instructions.  </li>
+<li>Modify config.js in your Ghost source code folder to update the URLs used on your site.  </li>
+<li>To create a new theme for your site, follow the instructions <a href='http://docs.ghost.org/themes/' >here</a></li>
 </ol>
 
-<h3 id="links">Links</h3>
+<p>By this point you should have a local installation of Ghost running, created a few test articles, converted it to a static site using Buster and finally pushed the static site code to your GitHub pages repository and be looking at your spanking new site on the Interwebs.</p>
 
-<p>Want to link to a source? No problem. If you paste in url, like <a href='http://ghost.org/' >http://ghost.org</a> - it'll automatically be linked up. But if you want to customise your anchor text, you can do that too! Here's a link to <a href='http://ghost.org/' >the Ghost website</a>. Neat.</p>
+<h3 id="backingup">Backing Up</h3>
 
-<h3 id="whataboutimages">What about Images?</h3>
+<p>An important part of the process is backing up your customized blog and articles.  With Ghost, we want to make sure we backup:</p>
 
-<p>Images work too! Already know the URL of the image you want to include in your article? Simply paste it in like this to make it show up:</p>
+<ul>
+<li>Articles via sqlite DB</li>
+<li>Modified Theme</li>
+<li>Config changes</li>
+</ul>
 
-<p><img src='https://ghost.org/images/ghost.png'  alt="The Ghost Logo" /></p>
+<p>I simply uploaded my whole ghost directory (minus the node_modules folder) to GitHub, this is so I have a copy of my modified theme, the articles DB and the entire site source code if needed.</p>
 
-<p>Not sure which image you want to use yet? That's ok too. Leave yourself a descriptive placeholder and keep writing. Come back later and drag and drop the image in to upload:</p>
+<h3 id="conclusion">Conclusion</h3>
 
-<h3 id="quoting">Quoting</h3>
-
-<p>Sometimes a link isn't enough, you want to quote someone on what they've said. It was probably very wisdomous. Is wisdomous a word? Find out in a future release when we introduce spellcheck! For now - it's definitely a word.</p>
-
-<blockquote>
-  <p>Wisdomous - it's definitely a word.</p>
-</blockquote>
-
-<h3 id="workingwithcode">Working with Code</h3>
-
-<p>Got a streak of geek? We've got you covered there, too. You can write inline <code>&lt;code&gt;</code> blocks really easily with back ticks. Want to show off something more comprehensive? 4 spaces of indentation gets you there.</p>
-
-<pre><code>.awesome-thing {
-    display: block;
-    width: 100%;
-}
-</code></pre>
-
-<h3 id="readyforabreak">Ready for a Break?</h3>
-
-<p>Throw 3 or more dashes down on any new line and you've got yourself a fancy new divider. Aw yeah.</p>
-
-<hr />
-
-<h3 id="advancedusage">Advanced Usage</h3>
-
-<p>There's one fantastic secret about Markdown. If you want, you can  write plain old HTML and it'll still work! Very flexible.</p>
-
-<p><input type="text" placeholder="I'm an input field!" /></p>
-
-<p>That should be enough to get you started. Have fun - and let us know what you think :)</p>]]></description><link>http://my-ghost-blog.com/welcome-to-ghost/</link><guid isPermaLink="false">8f2a6894-d6fc-47e2-b3d0-2fbbd79bcb62</guid><category><![CDATA[Getting Started]]></category><dc:creator><![CDATA[Mark Dawson]]></dc:creator><pubDate>Wed, 16 Apr 2014 18:55:20 GMT</pubDate></item></channel></rss>
+<p>I found Ghost to be amazingly simple to setup and customize and easy to convert into a static site for <strong>FREE</strong> hosting on GitHub. Also I now have complete peace of mind that I will never lose my blog content again.  Happy blogging.</p>]]></description><link>http://markdaws.net/blog/fast-free-blog-courtesy-of-ghost-github-and-buster/</link><guid isPermaLink="false">d8d0853a-3e9d-42e5-ab82-443365864292</guid><category><![CDATA[github]]></category><category><![CDATA[ghost]]></category><category><![CDATA[blogging]]></category><category><![CDATA[tutorial]]></category><category><![CDATA[nodejs]]></category><dc:creator><![CDATA[Mark Dawson]]></dc:creator><pubDate>Wed, 16 Apr 2014 22:21:14 GMT</pubDate></item></channel></rss>
