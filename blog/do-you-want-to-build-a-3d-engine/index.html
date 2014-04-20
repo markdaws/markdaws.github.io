@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    
+    <title>Do you want to build a 3D Engine?</title>
+    <meta name="description" content="" />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="../favicon.ico">
+
+    
+
+    <link rel="stylesheet" type="text/css" href="../assets/css/screen.css?v=ffb0460ef6" />
+<!--    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />-->
+
+
+    <link rel="stylesheet" type="text/css" href="../assets/css/bootstrap.min.css?v=ffb0460ef6" />
+    <link rel="stylesheet" type="text/css" href="../assets/css/main.css?v=ffb0460ef6" />
+
+    
+    <meta name="generator" content="Ghost 0.4" />
+<link rel="alternate" type="application/rss+xml" title="markdaws.net" href="../rss/index.html">
+<link rel="canonical" href="http://markdaws.net/blog/do-you-want-to-build-a-3d-engine/" />
+</head>
+<body class="post-template">
+
+    <div class="header clearfix">
+        <p>
+            <a href="http://markdaws.net">
+                <span class="firstname">MARK</span><span class="surname">DAWSON</span>
+            </a>
+        </p>
+        <ul class="menu list-inline pull-left">
+            <li><a href="http://markdaws.net/about.html">ABOUT</a></li>
+            <li><a href="http://markdaws.net/things-i-coded.html">THINGS I CODED</a></li>
+            <li><a href="http://markdaws.net/hire-me.html">HIRE ME</a></li>
+            <li><a href="http://markdaws.net/photography.html">PHOTOGRAPHY</a></li>
+        </ul>
+
+        <ul class="social list-inline pull-right">
+            <li><a href="http://github.com/markdaws">Github</a></li>
+            <li><a href="http://twitter.com/markdaws">Twitter</a></li>
+            <li><a href="http://npmjs.org/~markdaws">NPM</a></li>
+        </ul>
+    </div>
+    <div class="banner"></div>
+
+    
+    
+
+
+
+<main class="content" role="main">
+
+    <article class="post">
+
+        
+        
+        <header class="post-header">
+	<!--
+            <a class="blog-logo" href="http://markdaws.net/blog">
+                
+                    <span class="blog-title">markdaws.net</span>
+                
+            </a>
+	    -->
+        </header>
+	
+
+        
+        
+
+            <span class="post-meta"><time datetime="2014-04-20">20 Apr 2014</time> </span>
+
+            <h1 class="post-title">Do you want to build a 3D Engine?</h1>
+
+            <section class="post-content">
+                <p>I've always had a love for 3D graphics and I've written several 3D Graphics Engines for projects that I have worked on over the years.  The great thing about really understanding the fundamentals of 3D rendering and the math behind it is that you can easily move from one engine to another as the high level concepts in most engines always tie back to the fundamentals.</p>
+
+<h3 id="code">Code</h3>
+
+<p>In this series of articles we will create a 3D engine from scratch, the source code will be checked into GitHub here: <a href="https://github.com/markdaws/hamilton">Hamilton</a>. The name Hamilton is a reference to <a href="http://en.wikipedia.org/wiki/William_Rowan_Hamilton">William Hamilton</a> who first described Quaternions, something we will use frequently in our graphical discussions.</p>
+
+<h3 id="technologies">Technologies</h3>
+
+<p>In terms of technologies, we will be using JavaScript, WebGL and Canvas.  My aim will be to let the framework switch between WebGL and Canvas for some basic functionality, while reserving advanced techniques for WebGL (things such as shaders, which we will get to at some point).  At some point I would like to create a series on <a href="https://unity3d.com/unity">Unity3D</a> that map back to these tutorials, keep posted.</p>
+
+<h3 id="chapters">Chapters</h3>
+
+<p>I'll update the index below as I get to writing new chapters.  The first few will be a bit abstract, but are core to your understanding of a 3D world,</p>
+
+<ol>
+<li><a href="../do-you-want-to-build-a-3d-engine-part-1.1">What is a 3D engine?</a>  </li>
+<li>Vectors + Points  </li>
+<li>Matrices  </li>
+<li>Transforms  </li>
+<li>Quaternions  </li>
+<li>Projection  </li>
+<li>Geometry  </li>
+<li>Materials  </li>
+<li>Animation</li>
+</ol>
+
+<p>Lets get started shall we :)</p>
+            </section>
+
+            <footer class="post-footer">
+
+                <section class="author">
+                    <h4>Mark Dawson</h4>
+                    <p></p>
+                    <ul class="author-meta clearfix">
+                        
+                        
+                    </ul>
+                </section>
+
+                <section class="share">
+                    <h4>Share this post</h4>
+                    <a class="icon-twitter" href="https://twitter.com/share?text=Do%20you%20want%20to%20build%20a%203D%20Engine%3F&amp;url=http://markdaws.net/blog/do-you-want-to-build-a-3d-engine/"
+                        onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                        <span class="hidden">Twitter</span>
+                    </a>
+                    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://markdaws.net/blog/do-you-want-to-build-a-3d-engine/"
+                        onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                        <span class="hidden">Facebook</span>
+                    </a>
+                    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://markdaws.net/blog/do-you-want-to-build-a-3d-engine/"
+                       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+                        <span class="hidden">Google+</span>
+                    </a>
+                </section>
+
+            </footer>
+
+        
+
+    </article>
+
+</main>
+
+
+    <footer class="site-footer">
+        <a class="subscribe icon-feed" href="http://markdaws.net/blog/rss/"><span class="tooltip">Subscribe!</span></a>
+        <div class="inner">
+             <section class="copyright">All content copyright <a href="http://markdaws.net/blog/">markdaws.net</a> &copy; 2014 &bull; All rights reserved.</section>
+             <section class="poweredby">Proudly published with <a class="icon-ghost" href="https://ghost.org">Ghost</a></section>
+        </div>
+    </footer>
+
+    
+    <script src="../public/jquery.js?v=ffb0460ef6"></script>
+
+    
+    <script type="text/javascript" src="../assets/js/jquery.fitvids.js?v=ffb0460ef6"></script>
+    <script type="text/javascript" src="../assets/js/index.js?v=ffb0460ef6"></script>
+
+</body>
+</html>

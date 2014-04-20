@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    
+    <title>Do you want to build a 3D Engine? - Part 1</title>
+    <meta name="description" content="" />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="favicon.ico">
+
+    
+
+    <link rel="stylesheet" type="text/css" href="assets/css/screen.css?v=ffb0460ef6" />
+<!--    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />-->
+
+
+    <link rel="stylesheet" type="text/css" href="assets/css/bootstrap.min.css?v=ffb0460ef6" />
+    <link rel="stylesheet" type="text/css" href="assets/css/main.css?v=ffb0460ef6" />
+
+    
+    <meta name="generator" content="Ghost 0.4" />
+<link rel="alternate" type="application/rss+xml" title="markdaws.net" href="rss/index.html">
+<link rel="canonical" href="http://markdaws.net/blog/do-you-want-to-build-a-3d-engine-part-1/" />
+</head>
+<body class="post-template">
+
+    <div class="header clearfix">
+        <p>
+            <a href="http://markdaws.net">
+                <span class="firstname">MARK</span><span class="surname">DAWSON</span>
+            </a>
+        </p>
+        <ul class="menu list-inline pull-left">
+            <li><a href="http://markdaws.net/about.html">ABOUT</a></li>
+            <li><a href="http://markdaws.net/things-i-coded.html">THINGS I CODED</a></li>
+            <li><a href="http://markdaws.net/hire-me.html">HIRE ME</a></li>
+            <li><a href="http://markdaws.net/photography.html">PHOTOGRAPHY</a></li>
+        </ul>
+
+        <ul class="social list-inline pull-right">
+            <li><a href="http://github.com/markdaws">Github</a></li>
+            <li><a href="http://twitter.com/markdaws">Twitter</a></li>
+            <li><a href="http://npmjs.org/~markdaws">NPM</a></li>
+        </ul>
+    </div>
+    <div class="banner"></div>
+
+    
+    
+
+
+
+<main class="content" role="main">
+
+    <article class="post">
+
+        
+        
+        <header class="post-header">
+	<!--
+            <a class="blog-logo" href="http://markdaws.net/blog">
+                
+                    <span class="blog-title">markdaws.net</span>
+                
+            </a>
+	    -->
+        </header>
+	
+
+        
+        
+
+            <span class="post-meta"><time datetime="2014-04-20">20 Apr 2014</time> </span>
+
+            <h1 class="post-title">Do you want to build a 3D Engine? - Part 1</h1>
+
+            <section class="post-content">
+                <h3 id="whatisa3dengine">What is a 3D Engine?</h3>
+
+<p>The main purpose of a 3D engine is to take descriptions of objects in a 3-dimensional world and render these objects on your 2-dimensional monitor.  You also want to be able to take inputs, such as key presses, mouse events to manipulate the 3D world, such as moving around and interacting with objects in the world.</p>
+
+<h3 id="components">Components</h3>
+
+<p>Most 3D Engine have the following basic parts, they may be named something different or be connected in slightly different ways, but the overall concepts are the same.  Below is an example of a 3D scene are rendered in the Unity Game Engine: <br />
+<img src="content/images/2014/Apr/basic_scene.jpg" alt="Example Scene" /></p>
+
+<h4 id="meshesmaterials">Meshes + Materials</h4>
+
+<p>Meshes are the building blocks of a 3D engine. A mesh is generally a combination of 3D geometry and materials that describe how to render a 3D object. The geometry is a combination of 3D points [(x1, y1, z1), (x2, y2, z2) ...] along with a description of the ordering to render these points.  If you notice in the scene, the objects are all made out of multiple triangles, even the sphere is rendered using multiple triangles.  This is because triangles have a lot of properties that make then very efficient to render, so when you have a number of 3D points, you also have to specify how the points are connected together to make the triangles. For example, maybe one triangle is made by connecting p1, p2, p3 and another triangle p3, p4, p5 and so on.  In the example below, you can see the sphere, cube and plane are all make from multiple triangles: <br />
+<img src="content/images/2014/Apr/meshes.jpg" alt="Meshes Example" /></p>
+
+<p>As well as the geometry, a mesh contains materials.  Materials describe given a triangle, how should it's surface be rendered to the screen, should it be a solid colour, transparent, rendered using a texture (image), animated.  There are many ways it can be rendered and a single mesh may have multiple materials associated with it.  For example, if we are rendering a 3D car, there might be one material that renders the body paint, another for the glass, another for the tyres etc.</p>
+
+<h4 id="lights">Lights</h4>
+
+<p>In order to be able to see anything, as in the real world, you need to define what lights are in a scene.  The light could be an ambient light (a fixed amount of constant light that falls on all surfaces), a directional light, a point light etc.  A scene could contain many different light sources. In the example above you can see a light source illuminating the sphere.</p>
+
+<h4 id="cameras">Cameras</h4>
+
+<p>A scene has to be rendered from a point of view.  A camera will mainly be defined by a position, a look direction and a field of view.  The field of view describes how much of the world can be viewed at one time.  It is possible to have multiple cameras in the world, for example in multiplayer games, the world is being rendered from multiple views at any point in time.  In the scene above, you can see a camera looking at the sphere, the pyramid attached to the camera shows the camera "view frustum", if a 3D object is inside the view frustum bounds it will be rendered, otherwise it will be ignored.</p>
+
+<h4 id="scenegraphs">Scene Graphs</h4>
+
+<p>Once your worlds start getting more complicated, scene graphs come into play.  You can think of a scene graph as a hierarchy, where nodes higher in the tree own child nodes.  A node can contain a description that should be applied to all of the child nodes.  For example if you imagine modelling an arm and a hand, if you move the forearm up, then you want the hand to also follow, so we define a transform for the forearm movement and this transform is applied to the hand as well to keep it in sync, the hand is a child of the forearm.</p>
+
+<p>Scene graphs can also be used to specify in what order things should be drawn, when transparencies come into play, the order you render object is important.</p>
+
+<p>They can also be used to improve performance, you can use the tree to quickly determine if a part of the scene is visible or not to the camera, if it's not then there is no need trying to draw it.</p>
+
+<h4 id="picking">Picking</h4>
+
+<p>A 3D Engine will also be responsible for providing a way to interact with object in the scene.  This is generally called picking. You take a position on the 2D screen and turn that position into a ray that you shoot back into the 3D world, and see if the ray hits any objects.  You can then use this for moving objects around.</p>
+
+<h3 id="sowhatsagameengine">So what's a game engine?</h3>
+
+<p>A game engine is something more fully featured than just a 3D engine, like <a href="http://unity3d.com">Unity</a>. It provides some or all of the following:</p>
+
+<ul>
+<li>2D / 3D graphics</li>
+<li>Sound</li>
+<li>Asset management (importing meshes from various modelling tools)</li>
+<li>Interface building</li>
+<li>GUI tools for building worlds</li>
+</ul>
+
+<p>This series of articles only focusses on the 3D graphics portion, but I would definitely recommend learning how a fully featured game engine like Unity works, to get a feel for all the parts that are required to develop a 3D application.  Although writing your own solution from scratch is definitely fun, it you want to develop a project quickly with support for many assets and effects, you definitely should look in to using an existing engine, rather than writing your own from scratch.</p>
+
+<h3 id="nexttime">Next time</h3>
+
+<p>In the next part of this series we will look at some of the fundamental mathematical concepts, such as points, vectors, matrices, quaternions then with that as a base, move on to actually rendering some content on the screen.</p>
+            </section>
+
+            <footer class="post-footer">
+
+                <section class="author">
+                    <h4>Mark Dawson</h4>
+                    <p></p>
+                    <ul class="author-meta clearfix">
+                        
+                        
+                    </ul>
+                </section>
+
+                <section class="share">
+                    <h4>Share this post</h4>
+                    <a class="icon-twitter" href="https://twitter.com/share?text=Do%20you%20want%20to%20build%20a%203D%20Engine%3F%20-%20Part%201&amp;url=http://markdaws.net/blog/do-you-want-to-build-a-3d-engine-part-1/"
+                        onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                        <span class="hidden">Twitter</span>
+                    </a>
+                    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://markdaws.net/blog/do-you-want-to-build-a-3d-engine-part-1/"
+                        onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                        <span class="hidden">Facebook</span>
+                    </a>
+                    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://markdaws.net/blog/do-you-want-to-build-a-3d-engine-part-1/"
+                       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+                        <span class="hidden">Google+</span>
+                    </a>
+                </section>
+
+            </footer>
+
+        
+
+    </article>
+
+</main>
+
+
+    <footer class="site-footer">
+        <a class="subscribe icon-feed" href="http://markdaws.net/blog/rss/"><span class="tooltip">Subscribe!</span></a>
+        <div class="inner">
+             <section class="copyright">All content copyright <a href="http://markdaws.net/blog/">markdaws.net</a> &copy; 2014 &bull; All rights reserved.</section>
+             <section class="poweredby">Proudly published with <a class="icon-ghost" href="https://ghost.org">Ghost</a></section>
+        </div>
+    </footer>
+
+    
+    <script src="public/jquery.js?v=ffb0460ef6"></script>
+
+    
+    <script type="text/javascript" src="assets/js/jquery.fitvids.js?v=ffb0460ef6"></script>
+    <script type="text/javascript" src="assets/js/index.js?v=ffb0460ef6"></script>
+
+</body>
+</html>
