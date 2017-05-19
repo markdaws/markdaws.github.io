@@ -2,6 +2,19 @@
   <head><title>testing</title></head>
   <body>
     <script>
+
+      function awaitPostMessage(cb) {
+        var isReactNativePostMessageReady = !!window.originalPostMessage;
+        if (isReactNativePostMessageReady) {
+          return cb()
+        }
+
+        setTimeout(function() {
+          awaitPostMessage(cb)
+        }, 100)
+      }
+
+      awaitPostMessage(function() {
         window.postMessage(
           JSON.stringify({
             deviceToken: '12345',
@@ -10,6 +23,7 @@
           }),
           window.location.origin
         );
+      });
     </script>
   </body>
 </html>
