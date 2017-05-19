@@ -2,12 +2,11 @@
   <head><title>testing</title></head>
   <body>
     <script>
-      setTimeout(function() {
-        alert(window.location.href)
-        //window.location = 'paste://oauth?token=1234'
-      }, 1000)
+        window.message(JSON.stingify({
+          deviceToken: '12345',
+          teamAlias: 'team12345',
+          href: window.location.href
+        }))
     </script>
-    Testing page
-
   </body>
 </html>
