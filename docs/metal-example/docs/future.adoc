@@ -1,0 +1,9 @@
+= Future
+
+Toy3D only scratches the basics of what you can do with a 3D engine. Some immediate improvements we could make are:
+
+- Lighting Models: we already pass through the normal information through to the vertex shader, this can be used to add basic lighting information.
+- Multiple textures per mesh: Right now we are limited to one material for the entire mesh. It may be that you want to support multiple materials, you could add the concept of a submesh to the mesh class, where each submesh has a material and index in to the overall vertex buffer.
+- Add support for picking objects from the scene i.e. clicking on a model and highlighting it.
+
+And so on :)

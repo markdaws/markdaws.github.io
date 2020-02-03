@@ -1,0 +1,231 @@
+= 3D Fundamentals
+
+Before we talk about Metal or the implementation of our 3D engine we need to understand a few core concepts around 3D graphics, along with the basics of how you take points in a 3D space and convert them to pixels on a 2D screen.
+
+If you are already familiar with how 3D graphics work at a high level, then feel free to skip this whole section.
+
+== Defining a 3D Model
+
+The first thing we need to do in order to render a 3D model to the screen is define what data we need and how to organize that data.
+Let's look at a 3D model and see how it works.
+A great source of online 3D models is https://sketchfab.com[Sketchfab], we will use this model of a house as an example.
+
+.A fully rendered 3D model (https://sketchfab.com/3d-models/ftm-0970f30574d047b1976ba0aa6f2ef855[Source])
+image::model-rendered.jpg[]
+
+NOTE: If you visit the model on Sketchfab, their viewer has a model inspector option in the bottom right that exposes all the underlying model information, it is really fun to play around with.
+
+The first thing we need to define are the individual 3D x,y,z values that make up the model, the vertices.
+When creating your 3D model in some modelling tool (or by hand!) we draw the content and end up with a long list of 3D points.
+Along with the 3D points you also have to specify how these points are connected together to actually draw something more than just points (you would end up with a point cloud if you did that).
+Typically GPUs like to process data in terms of triangles, they are a simple mathematical concept that have several simple properties that make them very fast to convert from 3D to points on a 2D screen.
+
+So given a list of 3D points we also specify how those points connect, we specify the primitive, like a triangle and then let the GPU know which points correspond to which triangle.
+This can be done by the implicit order of the 3D points in your vertex buffer e.g. p0, p1, p2 is triangle0, p3, p4, p5 is triangle1 and so on, or you can define an index buffer, which uses the index into the vertex buffer to define the triangles.
+This has the advantage that you can use the same 3D point in more than one triangle, whereas with the previous method you would have to duplicate points.
+
+Below is an example of taking the 3D points and defining how they are connected and rendering a plain model.
+
+.A wireframe view of the 3D model
+image::model-wireframe.jpg[]
+
+.An untextured version of the model
+image::model-unshaded.jpg[]
+
+Now that we can draw the geometry of the model, we want to make it look a bit more interesting.
+This can be done by either just giving each point in a model a fixed color, or you can also specify that the 3D point should map to a 2D position in a texture, then use the texture to paint on to the model.
+
+In the example below you can see the red dot on the left in the 3D model and on the right how the red dot is actually mapped to a 2D coordinate in the texture.
+
+.An example showing how a texture is mapped to the model geometry. Notice how the red dot on the 3D model maps to a location in the 2D texture
+image::model-diffuse.png[]
+
+You can see how the 2D texture is filled with pieces of the 3D model surface. Typically 3D modelling tools will generate these for you.
+
+Given this information we can see that our vertices are not only 3D positions but also other information.
+If we generate a number of vertices for our model it might look something like position:uv:normal
+
+{blank}[x0,y0,z0,u0,v0,nx0,ny0,nz0,x1,y1,z1,u1,v1,nx1,ny1,nz1, ... ]
+
+NOTE: Texture coordinates are usually called u and v, with u being a horizontal offset into the texture and v being a vertical offset.
+NOTE: We haven't discussed normals yet, but (nx0, nxy0, nz0) is a vector that you can define for each vertex that defines how light behaves with the model.
+
+With this information in mind you can see that a 3D API like Metal is concerned with efficiently taking all of the vertex information and associated content such as textures and trying to convert those into 2D images as fast as possible.
+
+== Local vs. World Space
+When 3D objects are created in a modelling tool, the points in the object are all relative to a "local" origin.
+This is commonly referred to as local / object / model space.
+The model is generally created so that the origin and axis make manipulating the object easier.
+
+The local origin is normally either placed in the center of the object, if it's something you want to rotate around the center e.g. a ball, or at the bottom of the object, for example if you modelled a vase having the origin at the bottom easily lets you place the object on another surface like a table without any extra manipulation.
+
+When constructing our global 3D world with many individual objects in it, we have one world origin and set of axis x,y and z that are used by all objects.
+This axis and origin act as a common reference amongst all objects in the world.
+
+As models are placed in the world we transform their local points to world points using rotation, scaling and translation.
+This is known as their model transform.
+For example, if we modelled a 3D ball, the local origin of [0,0,0] might be in the center of the ball when we define all the 3D points in the ball, but when it's placed in the world its origin might now be at [10,5,3].
+
+One way to think of this would be if you were modelling a scene with multiple chairs, you would first create a single chair model, probably with the origin at the bottom of the legs to make it easy to put the chairs on the floor plane.
+If we just insert multiple chairs in the world without any additional transforms, they would all overlap at the world origin since their 3D points would all be the same, we would only see one chair.
+One way to work around this would be to actually define all of the points in the model in world space when you create it, but that would mean you would have to make N individual chair models, you couldn't reuse just one instance of the model.
+
+Instead we insert multiple instances of the same chair model, but on each chair we would set a different translation, scaling and rotation to transform each local chair to a final position in the world.
+Their "local" 3D points are still all the same, but their final world 3D points now differ.
+
+.An example of multiple cubes transformed in to one world space (ironically created in Unity)
+image::cubes.jpg[align="center"]
+
+== Object Hierarchies
+We have talked about how an object is initially defined in local space, then we applied a set of transforms to define its appearance in world space.
+However, it's possible to apply more than one level of transforms to an object to affect its final appearance in world space.
+We can specify an objects transform as being relative to a parent or ancestor objects.
+
+For example, if we were making a static model of a subset of the solar system, you could draw the sun, earth and moon and place them in a scene with the following hierarchy:
+....
+Solar System
+ -> Sun
+ -> Earth
+ -> Moon
+....
+
+Each item would then have a single transform applied to it to move it to a final world position.
+
+However if you now wanted to animate the scene so that the sun rotates in place, the earth rotates around the sun and the moon around the earth, you would have to manually calculate the transforms each frame, taking in to account how the entity should move relative to the other entities.
+This is a lot of duplicated calculation and makes the code more complicated.
+
+A simpler way to model the scene would be instead with the following hierarchy:
+....
+Solar System
+ -> Sun
+  -> Earth
+    -> Moon
+....
+
+Now to calculate the final world position of an entity, you start at the bottom and traverse up the hierarchy applying the transform at each level until you end up with one overall transform.
+
+For example, if you wanted to calculate the overall world transform of the moon, you would do the following (transforms are applied from right to left):
+
+====
+World Transform = T~sun~ * T~earth~ * T~moon~
+====
+NOTE: T represents a transform, some combination of scaling, rotation and translation. Transforms are applied right to left in this case.
+
+This makes everything very simple, as we rotate the sun, the earth and moon automatically get their final world transform updated without us having to explicitly set a new transform on them.
+
+We will use this concept in our 3D engine to create a simple scene graph.
+
+== Eye / Camera Space
+Now that we have all of the 3D points of our models in a single unified world space, we need to move on to the next step in our journey of figuring out how to get those 3D points on a 2D screen.
+
+Just as we see the real world through the viewpoint of our location in the world and the position and orientation of our eyes we need to define where our 3D scene will be viewed from.
+This is done by defining a camera object.
+
+To define the camera we need a few basic properties:
+
+Origin:: The location of the camera in 3D space (x, y, z).
+Look Direction:: A 3D vector specifying in which direction the camera is looking.
+Up Vector:: Given a look direction we also need some way to specify the rotation of the camera.
+If you imagine a look vector shooting out of your eyes, the look vector doesn't change even as you tilt your head left or right.
+The up vector helps clarify the camera rotation, normally this can just be set to (0,1,0).
+
+In our engine we are going to use a right hand coordinate system, this is where +x points to the right, +y is up and +z points towards the camera.
+We could use a left handed coordinate system, it doesn't really matter since at the end of the day we have to transform the points to the same representation the GPU expects, it would just change some of the matrices below.
+
+To convert a point from world space to eye space we can use the following matrix transformation:
+
+.Math.swift
+[source,swift]
+----
+static func makeLook(
+  eye: Vec3,
+  look: Vec3,
+  up: Vec3
+) -> Mat4 {
+
+  let vLook = normalize(look)
+  let vSide = normalize(cross(vLook, normalize(up)))
+  let vUp = normalize(cross(vSide, vLook))
+
+  return Mat4([
+    Vec4(vSide, 0),
+    Vec4(vUp, 0),
+    Vec4(vLook, 0),
+    Vec4(-eye, 1)
+  ])
+}
+----
+
+I'm not going to go over the math to create this transform, but there are a vast number of resources on line if you want to find out more.
+
+Needless to say, it is basically just subtracting the position of the camera from each point, to make the points relative the origin of the camera instead of the world origin, then rotating each point so that the camera up vector is considered up instead of the world up e.g. [0, 1, 0].
+
+== Projection (3D -> 2D)
+Now we have taken the points in 3D world space and converted them in to values relative to a cameras view point, we need to now take a point in 3D and convert it in to a representation on a 2D plane so that it can be rendered on a screen.
+The process of transforming 3D points to 2D space is called projection.
+
+We will project points as we see them in the real world using Perspective Projection.
+This is where parallel lines seem to converge to a point as they move further away from the viewing position.
+
+.An example of perspective (https://unsplash.com/photos/o0lnBAQ175A)
+image::paul-jarvis-o0lnBAQ175A-unsplash.jpg[]
+
+In order to calculate our 3D -> 2D transform we can think of the problem as taking the camera and having a flat plane on which all of the 3D points will be projected.
+We will want this plane to have the same aspect ratio (width/height) as the screen we are rendering to so that they match.
+We will also want to define some other planes, a far plane which specifies that any object further than this plane we don't want to render.
+Theoretically we don't need this, we could render everything but in graphics we generally want to limit the number of object we render for performance purposes.
+We also need a near plane, this stops objects too close to the camera being rendered which can cause weird issues with division by 0 etc.
+These two planes will be controlled by values zNear and zFar.
+
+The last piece of information we need is a field of view.
+The field of view specifies how wide or narrow the camera can view.
+If you have a narrow field of view it is like zooming the camera in, making the field of view larger is like zooming out on the camera.
+
+Given this we end up with something like below:
+
+.View Frustum (https://stackoverflow.com/a/5836522/61811)
+image::frustum.jpg[]
+
+This defines a view frustum in the near, far, top, right, bottom and left planes.
+This view frustum can also be used by the GPU to clip any parts of the 3D scene that are not visible.
+If the points are outside of this view frustum then they can be ignored by the GPU.
+
+To do this we want our projected points inside the view frustum to map to values defined by Metals clip space (as we will see later this is what we want to end up with and output from our Vertex Shader):
+
+.Metal clip space (https://developer.apple.com/documentation/metal/using_a_render_pipeline_to_render_primitives)
+image::clipspace.jpg[]
+
+I'm not going to go in how to derive the math here, there are many resources online to look at, but for our purposes the math we will use looks like:
+
+.Math.swift
+[source,swift]
+----
+static func makePerspective(
+  fovyDegrees fovy: Float,
+  aspectRatio: Float,
+  nearZ: Float,
+  farZ: Float
+) -> Mat4 {
+  let ys = 1 / tanf(Math.toRadians(fovy) * 0.5)
+  let xs = ys / aspectRatio
+  let zs = farZ / (nearZ - farZ)
+  return Mat4([
+    Vec4(xs,  0, 0,   0),
+    Vec4( 0, ys, 0,   0),
+    Vec4( 0,  0, zs, -1),
+    Vec4( 0,  0, zs * nearZ, 0)
+  ])
+}
+----
+
+NOTE: As you can see this function is dependant on the aspect ratio of the screen, so if that changes we need to make sure that we update this calculation.
+
+== Summary
+
+In summary, to take a local point in 3D and end up with it transformed to values we can use to render to the screen we perform (from right to left):
+
+====
+LocalToClipSpace = T~projection~ * T~view~ * T~model~
+====
+
+I've skipped over a lot of the details here but I would recommend this book if you want to dive more into the math around this: https://www.essentialmath.com/book.htm[Essential Math for Games Programmers].

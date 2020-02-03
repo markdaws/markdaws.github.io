@@ -1,0 +1,847 @@
+= 3D Engine
+
+Now that we have a good understanding of all the pieces required to make a Metal app, let's start creating the core types we will need to render something on the screen.
+
+== Disclaimer
+There are an infinite number of ways you can write a 3D engine. The way I have laid out this code is not the "one true way", it's one way but depending on your requirements, how performant you want your code to be, how maintainable you want the code etc, those will all factor in to how your code is laid out.
+This code really gives you a starting point to where you can play around with Metal and start writing a more comprehensive and complex engine.
+
+Once looking and playing around with this code I would really recommend trying out other 3D engines, they all have similar concepts but expose them in different ways. I actually really like https://developer.apple.com/documentation/scenekit[SceneKit], it's a very nice library build on top of Metal, but there are also plenty of other engines you can look at like https://docs.unity3d.com/Manual/index.html[Unity] or even things like https://docs.microsoft.com/en-us/previous-versions/windows/xna/bb197344(v=xnagamestudio.40)[XNA] (one of my favorites back in the day) that will help you learn more about 3D engine design.
+
+== Overview
+There are a couple of main types in our Engine.
+How they all fit together is pretty simple:
+
+----
+Renderer
+ |- Scene
+   |- Camera
+   |- Node
+    |- Mesh?
+     |- Material
+      |- Texture?
+    |- Node
+    |- Node
+     |- ...
+----
+
+Renderer::
+An abstraction around the GPU. This class creates the device and command buffer and then create a single scene object that can be populated with content.
+
+Scene::
+The scene contains the root node which all content will be added to. Right now our scene is pretty bar bones but we will be adding extra functionality later.
+
+Node::
+A node contains a mesh. The node lets you specify where in the world the mesh should be rendered based on the rotation, scaling and translation transforms.
+You can think of the mesh as just defining the model in local space, then the Node providing the information on how to take those local coordinates and move them in to the right place in the world.
+It also can contain other child nodes to create a hierarchical structure.
+The Mesh value is optional, a node doesn't have to have a Mesh, it can simply be a container for other nodes.
+
+Mesh::
+A mesh contains all of the 3D vertices data needed to render the object. It also keeps a reference to the material used to render the model.
+
+Material::
+The material defines how the model should look on the screen. Should it be a solid color, texture etc. It's really an abstraction around the vertex and fragment shader setup.
+
+Texture::
+A texture just contains the MTLTexture and MTLSamplerState objects and provides a helper method to load new textures.
+
+== Vec2 / Vec3 / Vec4 / Mat4
+We need some simple vector and matrix classes to use in our engine.
+Luckily Swift already has support for optimized Vector like types in the SIMD types.
+
+These types however are pretty verbose, it gets old typing the generic version of these so I just type aliased them to shorter friendly names:
+
+.Vec.swift
+[source,swift]
+----
+typealias Vec2 = SIMD2<Float>
+typealias Vec3 = SIMD3<Float>
+typealias Vec4 = SIMD4<Float>
+----
+
+.Mat.swift
+[source,swift]
+----
+typealias Mat4 = float4x4
+----
+
+.Quaternion.swift
+[source,swift]
+----
+typealias Quaternion = simd_quatf
+----
+
+In the Mat file I also added some extension helper methods to make using the types a bit easier such as Mat4.scale(...), Mat4.rotate(...), Mat4.translate(...).
+
+NOTE: As of the time of writing there seems to be a bug in the swift compiler around the generic SIMD types that makes compilation times really long in certain cases, or you may see errors where the swift compiler throws up it's hands and says it can't figure out the types (never seen this in a compiler before). Hopefully Apple fixes this soon but if you see long compile times you might have to break down your statements into simpler parts of provide more type information to the compiler to help it out. https://forums.swift.org/t/has-type-checking-operators-on-generic-types-always-been-this-slow/23413
+
+== Renderer
+There are some objects, such as MTLDevice, MTLCommandQueue that are long living and need to be passed around the app. We are going to create a high level Renderer class that will help instantiate these objects and also keep track of them.
+
+This is also going to be the class that implements the MTKViewDelegate protocol, so that we get updates when the view size changes (which is necessary to calculate our camera paraemeters later) and also the per frame callback we will use to kick off our rendering.
+
+.Renderer.swift
+[source,swift]
+----
+import MetalKit
+
+final class Renderer: NSObject {
+
+  let device: MTLDevice
+  let library: MTLLibrary
+  let commandQueue: MTLCommandQueue
+
+  init?(mtkView: MTKView) {
+
+    guard let device = MTLCreateSystemDefaultDevice() else {
+      print("Metal is not supported")
+      return nil
+    }
+    self.device = device
+
+    guard let library = device.makeDefaultLibrary() else {
+      print("Failed to make default library")
+      return nil
+    }
+    self.library = library
+
+    guard let commandQueue = device.makeCommandQueue() else {
+      print("Failed to make a command queue")
+      return nil
+    }
+    self.commandQueue = commandQueue
+
+    self.mtkView = mtkView
+    mtkView.device = device
+
+    // Specifies the pixel format to use for the buffer that will be rendered
+    // to the screen
+    mtkView.colorPixelFormat = .bgra8Unorm_srgb
+
+    // The format to use in the depth stencil. This is used to determine which parts
+    // of a model are visible.
+    mtkView.depthStencilPixelFormat = .depth32Float
+
+    super.init()
+  }
+
+}
+
+extension Renderer: MTKViewDelegate {
+
+  func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+  }
+
+  func draw(in view: MTKView) {
+  }
+}
+----
+
+== Scene
+For any situation where we have more that one object to draw we will want some kind of container that we can add Nodes to and keep track of them.
+The scene object will be this container.
+We will add a root property to the Scene which will be the top level Node for all nodes in our scene.
+
+There will only be one Scene instance and it will be created in the Renderer at creation time.
+
+As well as storing the root Node instance, the Scene class will also store the clear color, this is the color we use for every new frame as the background.
+Finally we also store the camera in the scene, the camera can be used to view the scene from different locations, just like a camera in the real world.
+
+.Scene.swift
+[source,swift]
+----
+import Metal
+
+public final class Scene {
+
+  /// The top level node in our entire scene
+  public let root = Node()
+
+  /// A camera used to view the content of the scene
+  public var camera: PerspectiveCamera
+
+  /// A color that will be used as the background for every new frame
+  public var clearColor: MTLClearColor = MTLClearColor(
+    red: 0.0,
+    green: 0.0,
+    blue: 0.0,
+    alpha: 1.0
+  )
+
+  init() {
+    camera = PerspectiveCamera(
+      origin: [0, 0, 5],
+      look: [0, 0, -1],
+      up: [0, 1, 0],
+      fovYDegrees: 90,
+      aspectRatio: 1.0,
+      zNear: 0.001,
+      zFar: 1000.0
+    )
+  }
+
+  func update(time: Time) {
+    root.updateInternal(time: time) #<1>
+  }
+
+  func render(
+    time: Time,
+    renderer: Renderer,
+    encoder: MTLRenderCommandEncoder,
+    uniformBuffer: MTLBuffer
+  ) {
+
+    root.render(
+      time: time,
+      camera: camera,
+      renderer: renderer,
+      encoder: encoder,
+      parentTransform: Mat4.identity
+    )
+
+  }
+}
+----
+<1> The update function will let us apply an update closure to each node that can be used to do per frame updates and animations.
+
+== PerspectiveCamera
+We need a camera so that we can move around the scene and set properties such as the field of view to control how zoomed in or out the scene will be.
+We will only support Perspective Projection in our engine, however adding Orthographic projection would be trivial by creating a Camera protocol that both a PerspectiveCamera and OrthographicCamera could implement.
+
+The camera is pretty simple, it exposes a viewMatrix and projectionMatrix property, these matrices are recalculated if the user changes any of the property of the camera.
+We then take these matrices and pass them to our vertex shader with a uniform buffer.
+
+.PerspectiveCamera.swift
+[source,swift]
+----
+final class PerspectiveCamera {
+
+  var origin: Vec3 { didSet { buildView = true } }
+  var look: Vec3 { didSet { buildView = true } }
+  var up: Vec3 { didSet { buildView = true } }
+  var fovYDegrees: Float { didSet { buildProjection = true } }
+  var aspectRatio: Float { didSet { buildProjection = true } }
+  var zNear: Float { didSet { buildProjection = true } }
+  var zFar: Float { didSet { buildProjection = true } }
+
+  private var buildProjection = true
+  private var buildView = true
+  private var _projectionMatrix = Mat4.identity
+  private var _viewMatrix = Mat4.identity
+
+  var projectionMatrix: Mat4 {
+    get {
+      if buildProjection {
+        buildProjection = false
+        _projectionMatrix = Math.makePerspective(
+          fovyDegrees: fovYDegrees,
+          aspectRatio: aspectRatio,
+          nearZ: zNear,
+          farZ: zFar
+        )
+      }
+      return _projectionMatrix
+    }
+  }
+
+  var viewMatrix: Mat4 {
+    get {
+      if buildView {
+        buildView = false
+        _viewMatrix = Math.makeLook(eye: origin, look: look, up: up)
+      }
+      return _viewMatrix
+    }
+  }
+
+  init(
+    origin: Vec3,
+    look: Vec3,
+    up: Vec3,
+    fovYDegrees: Float,
+    aspectRatio: Float,
+    zNear: Float,
+    zFar: Float
+  ) {
+    self.origin = origin
+    self.look = look
+    self.up = up
+    self.fovYDegrees = fovYDegrees
+    self.aspectRatio = aspectRatio
+    self.zNear = zNear
+    self.zFar = zFar
+  }
+
+}
+----
+
+== Mesh
+A mesh contains all of the 3D vertex data for the model and also the material that should be used to render the model (solid color, texture etc).
+
+The mesh is then responsible for setting the vertex buffer in the rendering pipeline and actually submitting the final draw command.
+
+.Mesh.swift
+[source,swift]
+----
+import MetalKit
+
+public final class Mesh {
+
+  public struct VertexBuffer {
+    public let buffer: MTLBuffer
+    public let bufferIndex: Int
+    public let primitiveType: MTLPrimitiveType
+    public let vertexCount: Int
+
+    public init(buffer: MTLBuffer, bufferIndex: Int, primitiveType: MTLPrimitiveType, vertexCount: Int) {
+      self.buffer = buffer
+      self.bufferIndex = bufferIndex
+      self.primitiveType = primitiveType
+      self.vertexCount = vertexCount
+    }
+  }
+
+  public let vertexBuffer: VertexBuffer
+  public var material: Material?
+
+  public init(vertexBuffer: VertexBuffer) {
+    self.vertexBuffer = vertexBuffer
+  }
+
+  func render(encoder: MTLRenderCommandEncoder) {
+    encoder.setVertexBuffer(vertexBuffer.buffer, offset: 0, index: vertexBuffer.bufferIndex)
+    encoder.drawPrimitives(
+      type: vertexBuffer.primitiveType,
+      vertexStart: 0,
+      vertexCount: vertexBuffer.vertexCount,
+      instanceCount: 1
+    )
+  }
+}
+----
+
+== Node
+The Node class represents a way to take 3D local data and transform them in to a point in the world.
+The node has a position, orientation and scale property that you can set to move the content in the world.
+It also has an optional mesh property, the mesh is used to describe the 3D data associated with the node.
+Nodes can contain other child nodes, in this way we can create our scene hierarchy of transforms.
+
+.Node.swift
+[source,swift]
+----
+public final class Node {
+  public var position = Vec3(0, 0, 0)
+  public var orientation = Quaternion.identity
+  public var scale = Vec3(1, 1, 1)
+
+  /**
+   The mesh associated with the node. Note that this is optional, a mesh can just be a container
+   for other child nodes and not have any renderable information associated with it.
+   */
+  public var mesh: Mesh?
+
+  /**
+   The update function can be used to modify the node parameters every frame. If this closure is
+   present it will be called once before the render call, every frame. You could use this to rotate
+   the node etc.
+   */
+  public var update: ((_ time: Time, _ node: Node) -> Void)?
+
+  /**
+   Returns a matrix that is the combination of the position, orientation and scale properties.
+   These are applied in scale -> rotate -> translate order.
+   */
+  public var transform: Mat4 {
+    let translate = Mat4.translate(position)
+    let s = Mat4.scale(scale.x, scale.y, scale.z)
+    return translate * orientation.toMat() * s
+  }
+
+  private var children = [Node]()
+
+  public init(mesh: Mesh? = nil) {
+    self.mesh = mesh
+  }
+}
+----
+
+As well as these simple properties, the other main job of the Node is to setup some of the rendering state.
+If the node has a mesh, we will take the material associated with the mesh and setup the fragment shader.
+This is also where we pass in the current model matrix to the vertex shader so that it can perform the local -> world transform.
+
+[source,swift]
+----
+func render(
+  time: Time,
+  camera: PerspectiveCamera,
+  renderer: Renderer,
+  encoder: MTLRenderCommandEncoder,
+  parentTransform: Mat4
+) {
+
+  let worldTransform = parentTransform * transform
+
+  // If there is no mesh then this is simply a passthrough node that contains
+  // other nodes
+  if let mesh = mesh, let material = mesh.material {
+    var constants = ModelConstants(modelMatrix: worldTransform)
+    encoder.setVertexBytes(&constants, length: MemoryLayout<ModelConstants>.size, index: 1)
+
+    if let texture = material.texture {
+      encoder.setFragmentTexture(texture.mtlTexture, index: 0)
+      encoder.setFragmentSamplerState(texture.samplerState, index: 0)
+    }
+    encoder.setRenderPipelineState(material.renderPipelineState)
+    mesh.render(encoder: encoder)
+  }
+
+  for node in children {
+    node.render(
+      time: time,
+      camera: camera,
+      renderer: renderer,
+      encoder: encoder,
+      parentTransform: worldTransform
+    )
+  }
+}
+----
+
+== Material
+When you want to render your 3D content, as well as the topology of the model such as the points in 3D space and the relationships between those points, how they compose to make primitives such as triangles or lines, we need to also be able to have some way of changing their visual appearance.
+This is where shaders come in.
+
+The Material class encapsulates which Vertex + Fragment shader should be used to draw the content, as well as specifying how the data should be stored in the vertex buffer in order for it to be accessed in the shaders.
+Going back to the Metal types, MTLRenderPipelineState is the object that stores the compiled vertex + fragment shaders, so inside our Material class we are just going to setup one of these objects.
+
+Obviously the shaders require that the vertex buffers have the correct data that the shader needs and also that the caller has put the data in the correct order inside the buffer. If you have put color information where the shader was expecting x,y,z values for a 3D point, you're going to have a bad time.
+
+.Material.swift
+[source, swift]
+----
+import Metal
+
+class Material {
+  let renderPipelineState: MTLRenderPipelineState
+
+  init?(
+    renderer: Renderer,
+    vertexName: String,
+    fragmentName: String,
+    vertexDescriptor: MTLVertexDescriptor
+  ) {
+    let descriptor = renderer.defaultPipelineDescriptor()
+    let fragmentProgram = renderer.library.makeFunction(name: vertexName)
+    let vertexProgram = renderer.library.makeFunction(name: fragmentName)
+    descriptor.vertexFunction = vertexProgram
+    descriptor.fragmentFunction = fragmentProgram
+    descriptor.vertexDescriptor = vertexDescriptor
+
+    guard let state = try? renderer.device.makeRenderPipelineState(descriptor: descriptor) else {
+      return nil
+    }
+    renderPipelineState = state
+  }
+}
+----
+
+Now that we have this base class, we can create any number of Materials that can be used to render models differently.
+In Toy3D there is function to create a BasicMaterial which supports solid colors and texturing of models.
+
+.Material.swift
+[source,swift]
+----
+extension Material {
+  public static func createBasic(renderer: Renderer, texture: Texture?) -> Material? {
+    let descriptor = MTLVertexDescriptor()
+
+    // Some vertex buffers are reserved by the render, this gives us the first
+    // free vertex buffer that we can use.
+    let bufferIndex = Renderer.firstFreeVertexBufferIndex
+
+    // position x,y,z
+    descriptor.attributes[0].format = .float3
+    descriptor.attributes[0].bufferIndex = bufferIndex
+    descriptor.attributes[0].offset = 0
+
+    // normal x,y,z
+    descriptor.attributes[1].format = .float3
+    descriptor.attributes[1].bufferIndex = bufferIndex
+    descriptor.attributes[1].offset = MemoryLayout<Float>.stride * 3
+
+    // color r,g,b,a
+    descriptor.attributes[2].format = .float4
+    descriptor.attributes[2].bufferIndex = bufferIndex
+    descriptor.attributes[2].offset = MemoryLayout<Float>.stride * 6
+
+    descriptor.attributes[3].format = .float2
+    descriptor.attributes[3].bufferIndex = bufferIndex
+    descriptor.attributes[3].offset = MemoryLayout<Float>.stride * 10
+
+    descriptor.layouts[bufferIndex].stride = MemoryLayout<Float>.stride * 12
+
+    return Material(
+      renderer: renderer,
+      vertexName: "basic_vertex",
+      fragmentName: texture != nil ? "texture_fragment" : "color_fragment",
+      vertexDescriptor: descriptor,
+      texture: texture
+    )
+  }
+}
+----
+
+Here you see we have specified the vertex and fragment shader we want to use in our .metal file.
+We also have specified how the data should be laid out in the vertex buffer when using these shaders.
+
+IMPORTANT: Notice how we are binding the data to bufferIndex Renderer.firstFreeVertexBufferIndex.
+Buffers 0 and 1 are bound by data in the engine, so buffer Renderer.firstFreeVertexBufferIndex and up are the free buffers you should use for your own data.
+If you try to bind to buffers below that things will break.
+
+== Texture
+The texture class will represent one texture in the system.
+It will store a reference to an MTLTexture instance and also to a MTLSamplerState object that is used to access the texture.
+We also add a simple helper method to load a texture.
+
+.Texture.swift
+[source,swift]
+----
+import MetalKit
+
+final class Texture {
+
+  let mtlTexture: MTLTexture
+  let samplerState: MTLSamplerState
+
+  init(mtlTexture: MTLTexture, samplerState: MTLSamplerState) {
+    self.mtlTexture = mtlTexture
+    self.samplerState = samplerState
+  }
+
+  /// Loads a texture from the main bundle with the given name
+  static func loadMetalTexture(device: MTLDevice, named: String) -> MTLTexture? {
+    let texLoader = MTKTextureLoader(device: device)
+    return try? texLoader.newTexture(
+      name: named,
+      scaleFactor: 1.0,
+      bundle: nil,
+      options: [.generateMipmaps : true]
+    )
+  }
+}
+
+----
+
+.Texture creation example
+[source,swift]
+----
+guard let mtlTexture = Texture.loadMetalTexture(device: renderer.device, named: "myImage") else {
+  return
+}
+
+let descriptor = MTLSamplerDescriptor()
+descriptor.normalizedCoordinates = true
+descriptor.minFilter = .linear
+descriptor.magFilter = .linear
+descriptor.mipFilter = .linear
+guard let sampler = device.makeSamplerState(descriptor: descriptor) else {
+  return
+}
+
+let texture = Texture(mtlTexture: mtlTexture, samplerState: sampler)
+
+// Use the texture in our app
+
+----
+
+== BasicVertex
+We will create a simple struct to help us define some 3D data that will let use provide position, normal, color and texture coordinates for the vertices of a model.
+
+.BasicVertex.swift
+[source,swift]
+----
+import Metal
+
+/**
+ BasicVertex represents a common set of values that you might want to associate with a vertex.
+
+ This one supports position, color, normal and texture coordinates.
+ */
+public struct BasicVertex {
+
+  // position
+  public var x, y, z : Float
+
+  // normal
+  public var nx, ny, nz: Float
+
+  // color
+  public var r, g, b, a: Float
+
+  // texCoords
+  public var u, v: Float
+
+  public init(pos: Vec3, normal: Vec3, color: Vec4, tex: Vec2) {
+    x = pos.x
+    y = pos.y
+    z = pos.z
+    nx = normal.x
+    ny = normal.y
+    nz = normal.z
+    r = color.x
+    g = color.y
+    b = color.z
+    a = color.w
+    u = tex.x
+    v = tex.y
+  }
+
+  public func floatBuffer() -> [Float] {
+    return [x, y, z, nx, ny, nz, r, g, b, a, u, v]
+  }
+
+  /// Given an array of vertices, returns an MTLBuffer containing the vertex data
+  public static func toBuffer(device: MTLDevice, vertices: [BasicVertex]) -> MTLBuffer? {
+    var data = [Float]()
+    vertices.forEach { (vertex) in
+      data.append(contentsOf: vertex.floatBuffer())
+    }
+
+    let size = MemoryLayout<BasicVertex>.stride * vertices.count
+    return device.makeBuffer(bytes: data, length: size, options: [])
+  }
+}
+----
+
+== Time
+The Time struct contains two values, one is a totalTime property that is a monotonic increasing value. The other is updateTime which is the time since the last update call. This is useful for animations where you don't want to just add a fixed amount every frame to an animation e.g. rotationX += 10, since if the frames don't render at an even rate things will jump, however you can just use the delta to compute how much the value should change based on some fixed amount per unit time.
+
+.Time.swift
+[source,swift]
+----
+struct Time {
+
+  /// The total time of the app. This is just a number that is always
+  /// increasing, it might not start at 0, just use it for relative calculations
+  let totalTime: TimeInterval
+
+  /// The time since the last update call
+  let updateTime: TimeInterval
+}
+----
+
+== Buffers
+
+The way we transfer data to and from the CPU and GPU is through buffers.
+Buffers are just blocks of memory.
+As we have seen we can create a new buffer to store our vertex data using device.createBuffer()
+
+However, we don't just need to pass vertex data to the shaders, we also have other pieces of information, most commonly the projectionMatrix, viewMatrix and modelMatrix that are used to transform the local 3D points in the model to world values that can then be projected in to 2D. The way we pass this information in Metal is the sames as the vertices, we just use a buffer.
+
+The view and projection matrix are constant across all models in the frame, we can create a struct to set them in the Swift code:
+
+.Uniforms.swift
+[source,swift]
+----
+struct Uniforms {
+  var viewProjection: Mat4
+}
+----
+
+Then we can allocate a buffer that will hold the contents of this struct which can be accessed in the vertex shader.
+
+[source,swift]
+----
+
+// Create the buffer
+guard let uniformBuffer: MTLBuffer? = device.makeBuffer(length: MemoryLayout<Uniforms>.size, options: []) else {
+  return
+}
+
+// Populate it with some values
+let uniformContents = uniformBuffer.contents().bindMemory(to: Uniforms.self, capacity: 1)
+uniformContents.pointee.viewProjection = scene.camera.projectionMatrix * scene.camera.viewMatrix
+
+// Bind the buffer to buffer 0
+encoder.setVertexBuffer(uniformBuffer, offset: 0, index: 0)
+----
+
+Now on the vertex shader side we access the uniforms by binding to the buffer 0 slot
+
+.Shaders.metal
+[source,msl]
+----
+vertex VertexOut basic_vertex(
+  const VertexIn vIn [[ stage_in ]],
+  const device Uniforms& uniforms [[ buffer(0) ]]) {
+
+  // ...
+}
+----
+
+=== Synchronizing Memory Access
+The above is fine, but there is a subtle problem.
+If we create a single buffer to be used to store our per frame values and use that across multiple frames, the CPU and GPU may actually be working on different frames at the same time.
+For example, the CPU sets up frame 0 and submits it, then sets up frame 1 and submits it and so on.
+The GPU receives these requests and processes them, but it can fall behind the CPU.
+
+Hence it could actually be the case that we populate the uniform buffer with data for frame 0, submit it, then immediately update the uniform buffer with frame 1 values while the GPU is still trying to process frame 0 data.
+This can happen because the buffer memory is shared between the CPU + GPU.
+
+Because of this we need to make sure that we have separate buffers for each frame that can be written and read from without affecting other frames.
+
+Apple has a great write up on this https://developer.apple.com/documentation/metal/synchronization/synchronizing_cpu_and_gpu_work[here].
+In our engine, we create a buffer pool, each frame can grab a new buffer to store the uniform data, then once it is processed we can return it to the pool.
+We know when the GPU has completed processing all the commands by using the completed callback on the MTLCommandBuffer instance.
+
+There is a simple class called BufferManager, when you initialize it you say how many buffers you need and how to initiaize those buffers:
+
+.Renderer.swift
+[source,swift]
+----
+let uniformBuffers = BufferManager(device: device, inflightCount: 3, createBuffer: { (device) in
+  return device.makeBuffer(length: MemoryLayout<Uniforms>.size, options: [])
+})
+uniformBuffers.createBuffers()
+
+// Inside the per frame render method
+
+// Get the buffer and update values
+let uniformBuffer = uniformBuffers.nextSync()
+
+guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+  return
+}
+
+// Submit draw commands
+
+// Wait the the commands to complete
+commandBuffer.addCompletedHandler { (MTLCommandBuffer) in
+  uniformBuffers.release()
+}
+----
+
+The BufferManager class uses the DispatchSemaphore class to manage access to the resources.
+
+.BufferManager.swift
+[source,swift]
+----
+import Metal
+
+final class BufferManager {
+
+  private let device: MTLDevice
+  private let inflightCount: Int
+  private var bufferIndex: Int = 0
+  private let createBuffer: (MTLDevice) -> MTLBuffer?
+  private let semaphore: DispatchSemaphore
+  private var buffers: [MTLBuffer]
+
+  /**
+   - parameters:
+     - device: The metal device
+     - inflightCount: The number of buffers to manage
+     - createBuffer: a closure that will ne called inflightCount times to create the buffers
+   */
+  init(device: MTLDevice, inflightCount: Int, createBuffer: @escaping (MTLDevice) -> MTLBuffer?) {
+    self.device = device
+    self.inflightCount = inflightCount
+    self.createBuffer = createBuffer
+    semaphore = DispatchSemaphore(value: inflightCount)
+    buffers = [MTLBuffer]()
+  }
+
+  /// You must call this before calling nextSync()
+  func createBuffers() {
+    for _ in 0..<inflightCount {
+      if let buffer = createBuffer(device) {
+        buffers.append(buffer)
+      } else {
+        print("Failed to create buffer")
+      }
+    }
+  }
+
+  /// Returns the next free buffer. If a buffer is not available this will block the caller
+  func nextSync() -> MTLBuffer {
+    semaphore.wait()
+
+    let buffer = buffers[bufferIndex]
+    bufferIndex = (bufferIndex + 1) % inflightCount
+    return buffer
+  }
+
+  /**
+   Indicates a buffer has been released.
+
+   - note: There is an implicit assumption that buffers are released in the same order
+           that they were acquired in.
+   */
+  func release() {
+    semaphore.signal()
+  }
+}
+----
+
+=== setVertexBytes
+You can also use the MTLRenderCommandEncoder https://developer.apple.com/documentation/metal/mtlrendercommandencoder/1515846-setvertexbytes[setVertexBytes] method to get a temporary buffer from a pool of buffers managed by the device.
+You can use these buffers for small blocks of data <4KB
+
+NOTE: You could also put the per frame values like view, model and projection matrix in the same buffer as your vertex data if you want, it is entirely up to you. You could write those at the beginning of the buffer and then offset the vertex data after them. You can then bind your Vertex shader structs to the same buffer at different offset. There are many ways of passing the data through, some might be more efficient for larger data.
+
+
+== Model I/O
+As well as defining our own Mesh vertex data, we also want to be able to import models from 3rd parties.
+There are many 3D model formats used in the real world, .obj, .ply, .usd and so on.
+https://developer.apple.com/documentation/modelio[Model I/O] is a framework from Apple that makes it very easy to import and export data from multiple formats. We will add support for Model I/O to our simple engine.
+
+Model I/O has a class called https://developer.apple.com/documentation/modelio/mdlasset[MDLAsset].
+This class is used to load the external data into Model I/O data structures.
+Once we have the MDLAsset instance, we can then use MetalKit to create a MetalKit mesh https://developer.apple.com/documentation/metalkit/mtkmesh[MTKMesh].
+A MTKMesh can then be used to get access to MTLBuffer instances that we can use to render the model.
+
+In our Mesh class we will support taking in a MTKMesh instance in the initializer:
+
+.Mesh.swift
+[source,swift]
+----
+public final class Mesh {
+
+  public var mtkMesh: MTKMesh?
+
+  public init(mtkMesh: MTKMesh) {
+    self.mtkMesh = mtkMesh
+  }
+
+  // ...
+}
+----
+
+The MTKMesh contains a vertex buffer that has all the 3D vertex data, then also a collection of SubMeshes.
+
+.Mesh.swift
+[source,swift]
+----
+func render(encoder: MTLRenderCommandEncoder) {
+
+    if let mesh = mtkMesh {
+      encoder.setVertexBuffer(mesh.vertexBuffers[0].buffer, offset: 0, index: Renderer.firstFreeVertexBufferIndex)
+
+      for submesh in mesh.submeshes {
+        encoder.drawIndexedPrimitives(
+          type: .triangle,
+          indexCount: submesh.indexCount,
+          indexType: submesh.indexType,
+          indexBuffer: submesh.indexBuffer.buffer,
+          indexBufferOffset: submesh.indexBuffer.offset
+        )
+      }
+      return
+    }
+
+    // Otherwise just use our own MTL buffer
+}
+----
+
+For an example of how to load an MDLAsset see the Examples.swift file in the Sample project: https://github.com/markdaws/metal-example/blob/master/metal-example/Examples.swift

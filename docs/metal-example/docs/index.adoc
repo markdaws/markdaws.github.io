@@ -1,0 +1,28 @@
+= Toy3D - simple 3D engine using Swift + Metal
+Mark Dawson
+v1.0, 2019-12-17
+:doctype: book
+:source-highlighter: rouge
+:toc: left
+:toclevels: 4
+:figure-caption!:
+:icons: font
+:githubroot: https://github.com/markdaws/Toy3D
+:imagesdir: ./images
+
+:leveloffset: +1
+
+include::about.adoc[]
+
+include::fundamentals.adoc[]
+
+include::metal.adoc[]
+
+include::engine.adoc[]
+
+include::examples.adoc[]
+
+include::future.adoc[]
+
+:leveloffset: -1
+

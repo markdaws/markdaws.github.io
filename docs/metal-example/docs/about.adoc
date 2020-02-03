@@ -1,0 +1,39 @@
+= About
+
+Toy3D is a simple 3D engine built using https://developer.apple.com/swift/[Swift], https://developer.apple.com/metal/[Metal] and https://developer.apple.com/documentation/metalkit[MetalKit].
+Toy3D is not intended to be a high performance 3D engine or even used in any real application, it doesn't have any fancy optimizations or a large feature set.
+
+Its purpose is to allow someone to work through the basics of creating a simple 3D engine and learn about the core concepts of Metal and hopefully the code is simple enough that you can open the source and easily follow along.
+
+The reason why creating a simple 3D engine is a great learning experience is because most tutorials will show you the basics and get a triangle or cube rendering on the screen, which is great, but then actually trying to use that information to render >1 objects is another leap.
+How do you organize your code to handle encoding more than one model, what are the lifetime of different objects, how can you efficiently send multiple draw calls to the GPU etc.
+
+It is assumed that you have a basic understanding of 3D math concepts such as Vectors and Matrices. If not then I would recommend this book https://www.essentialmath.com/book.htm[Essential Math for Games Programmers].
+It's a really great resource for all of the core math concepts you will use in a 3D engine.
+
+== Source
+You can find all of the source code for the engine {githubroot}[{githubroot}].
+It is setup as a Swift package so you can easily include it in your own code.
+
+There is an example project that uses the library and creates some simple 3D scenes here: https://github.com/markdaws/metal-example
+
+If you find any issues or have any questions feel free to create some issues in the repository.
+
+== Software Versions
+The following software versions were used at the time of writing:
+
+- Xcode 11
+- Swift 5.1
+- iOS 12
+
+== Resources
+Here are a list of resources for Swift + Metal
+
+- https://developer.apple.com/documentation/metal[Metal Documentation]
+- https://developer.apple.com/documentation/metalkit[MetalKit Documentation]
+- https://docs.swift.org/swift-book/LanguageGuide/TheBasics.html[Swift Language Reference]
+- https://developer.apple.com/metal/Metal-Shading-Language-Specification.pdf[Metal Shader Language Specification]
+- https://developer.apple.com/library/archive/documentation/3DDrawing/Conceptual/MTLBestPracticesGuide/index.html[Metal Best Practices]
+- https://metalbyexample.com[Metal By Example]
+- https://developer.apple.com/videos/graphics-and-games/metal[WWDC Metal Talks]
+- https://developer.apple.com/metal/Metal-Feature-Set-Tables.pdf[Metal features by processor family]

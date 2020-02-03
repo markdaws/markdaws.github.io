@@ -1,0 +1,762 @@
+= Metal
+
+== What is Metal?
+
+[quote]
+Metal is a low-level, low-overhead hardware-accelerated 3D graphic and compute shader application programming interface (API) developed by Apple Inc., and which debuted in iOS 8. Metal combines functions similar to OpenGL and OpenCL under one API.
+
+Source: https://en.wikipedia.org/wiki/Metal_(API)[Wikipedia]
+
+You use the Metal API in your macOS, iOS or tvOS apps via Swift or Objective-C.
+The API lets you interact and send commands to the GPU.
+Along with the API you also need to write some Metal Shaders, this is done in the https://developer.apple.com/metal/Metal-Shading-Language-Specification.pdf[Metal Shader Language].
+
+Apple's aim with Metal was to replace OpenGL with a single API they owned and could control the roadmap for, that also allowed them to remove a lot of the overhead that comes with a cross platform framework with a long legacy.
+
+Whether you want or need to use Metal depends on your use case.
+Obviously if you are looking for a cross platform framework that could be used eventually on something like Android, Metal is not the way to go.
+However if you are Apple focussed or building a graphical abstraction where Metal might be one of the compile targets Metal will help you get the absolute highest performance for your graphical application.
+
+As well as Metal, Apple also has https://developer.apple.com/documentation/scenekit[SceneKit] another 3D graphics framework you can use to create content in your 3D app.
+This might be a good choice and it is now built on top of Metal, but being another level of abstraction above Metal you may come across limitations in the framework that hinder you or the apps performance.
+Building on the absolute lowest level gives you the ultimate freedom, however I have found SceneKit to be a really intuitive and fun framework to use for simple 3D apps.
+
+== What is MetalKit?
+https://developer.apple.com/documentation/metalkit[MetalKit] is a framework that provides some helper classes that simply some common Metal use cases.
+
+It mainly provides an easy way to https://developer.apple.com/documentation/metalkit/mtktextureloader[load textures], handle loading 3D models from https://developer.apple.com/documentation/modelio[Model I/O] and provides a https://developer.apple.com/documentation/metalkit/mtkview[MTKView] class that makes creating a view capable of rendering Metal content very easy.
+
+== Shaders
+Metal is a low level framework, most of the magic actually comes from running your code not on the CPU but the GPU.
+Just like you can compile and run code on your CPU, you can write programs and compile and run them on the GPU instead, these are referred to as shaders.
+
+A GPU is a highly specialized piece of hardware which is massively parallelized to process complex 3D scenes (you can also run non graphical workloads on the GPU via compute shaders but we are not going to cover that here).
+
+There are two main types of shaders you will use to render 3D content, the vertex shader and the fragment shader.
+The job of the vertex shader is to take 3D points in local space for a model and transform them into clip space (as we talked about earlier).
+Once the GPU has the transformed points, it can take some extra information such as how the points are connected together to make triangles and determine which points on the screen should be drawn (rasterization).
+
+Once we have individual pixels, we can call the Fragment shader that will then determine what is the final color of the pixel, usually based on some lighting and materials associated with the model and scene.
+
+.A basic render pipeline (https://developer.apple.com/documentation/metal/using_a_render_pipeline_to_render_primitives[Source: Apple])
+image::renderpipeline.jpg[]
+
+The main process here is to first create a buffer in code, basically a contiguous chunk of memory, fill that with 3D information e.g. [x0, y0, z0, x1, y1, z1, ...] then send those values plus textures and other vertex attributes (color, normals) and the other matrices we looked at T~Model~, T~View~, T~Projection~ to the GPU.
+Once on the GPU, each vertex information will be passed to the vertex function, it then applies the transforms ot the points and returns them to the GPU for rasterization.
+Finally the rasterized points end up passed in to the Fragment shader where we decide the final color for the pixel.
+This information is then written to a frame buffer and eventually rendered to the screen.
+
+Metal shaders use the https://developer.apple.com/metal/Metal-Shading-Language-Specification.pdf[Metal Shader Language].
+MSL is based on C++14 with certain modifications and restrictions.
+
+An example of a simple vertex and fragment shader that renders models with a solid color is shown below.
+
+[source,msl]
+----
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct VertexIn { #<1>
+  float3 position [[attribute(0)]]; #<2>
+  float4 color [[attribute(1)]];
+};
+
+struct VertexOut { #<3>
+  float4 position [[position]]; #<4>
+  float4 color;
+};
+
+struct Uniforms { #<5>
+  float4x4 modelMatrix;
+  float4x4 viewProjectionMatrix;
+};
+
+vertex VertexOut simple_vertex( #<6>
+  const VertexIn vIn [[ stage_in ]], #<7>
+  const device Uniforms& uniforms [[ buffer(0) ]] {  #<8>
+
+  VertexOut vOut;
+  vOut.position = uniforms.viewProjectionMatrix * uniforms.modelMatrix * float4(vIn.position, 1.0); #<9>
+  vOut.color = vIn.color;
+  return vOut;
+}
+
+fragment float4 simple_fragment(VertexOut fragIn [[stage_in]]) { #<10>
+  return fragIn.color; #<11>
+}
+----
+<1> You define a structure to tell the vertex shader how the incoming vertex data is structured. This needs to match the exact structure of the data that you place into the buffer in the Swift side of the code.
+<2> You specify using special syntax which tells the shader which part of the input vertex buffer this attribute is mapped to.
+<3> You need to define a structure telling the vertex shader what data it will output.
+<4> You need to tell Metal which parameter is the position parameter since that is needed for rasterization.
+<5> The Uniforms structure is extra data that is used to process the vertices. Think of it as data that can be shared across all vertices.
+<6> This is the vertex shader, notice how you have to prefix the function with "vertex"
+<7> [[stage_in]] just specifies that this parameter is where your vertex data will be mapped to. stage_in means that Metal will piece together the VertexIn struct from whereever you told it the vertex data was going to come from inside a MTLVertexDescriptor object (this will make more sense later).
+<8> [[ buffer(0) ]] tells the shader that you mapped the vertex data to buffer slot 0. You can map many buffers at once e.g. buffer(1), buffer(2) etc. all with different information.
+<9> Here is where we transform the vertices from local space to clip space.
+<10> This is the fragment shader. Notice how it is prefixed with "fragment"
+<11> This is a simple shader that just passes through the pixel color. Normally you do something more complicated here like calculate lighting or add some special effects. Notice how even though we only specified a color at the vertices somehow we got a color for the pixel. This is because the rasterizer will interpolate the vertex values when it is rasterizing the triangles so the color of each pixel is a linear combination of the color in the vertices.
+
+== Core Types
+There are a number of core types you will interact with. They may initially look a bit verbose but they are actually pretty simple once you get the basic principles of Metal.
+
+=== MTLDevice
+A https://developer.apple.com/documentation/metal/mtldevice[MTLDevice] is a protocol that defines an abstraction around the GPU.
+It is used to create resources such as buffers to store 3D vertices, send drawing commands to the GPU, basically any interaction with the GPU is done through this interface.
+
+This is the first object you will want to create and then keep a reference to it for the lifetime of your application.
+You can create multiple devices if you have multiple GPUs in your computer, but for most apps you will just have one main device.
+
+Creating the device is very simple, call https://developer.apple.com/documentation/metal/1433401-mtlcreatesystemdefaultdevice[MTLCreateSystemDefaultDevice] and verify that a device could be created:
+
+[source, swift]
+----
+guard let device = MTLCreateSystemDefaultDevice() else {
+  print("Metal is not supported")
+  return
+}
+----
+
+=== MTLCommandQueue
+In order to draw anything on the screen we have to be able to send commands to the GPU.
+A https://developer.apple.com/documentation/metal/mtlcommandqueue[MTLCommandQueue] lets you send commands to the GPU.
+You create command buffers, which just contain multiple GPU instructions, then submit the buffers to the command queue.
+
+For most apps you will just need one command queue, however you can create multiple queues if you have different types of work you are submitting to the GPU, such as one queue for real-time rendering and one queue compute processing (running non visual code on the GPU).
+
+To create a queue you simply call https://developer.apple.com/documentation/metal/mtldevice/1433388-newcommandqueue[newComandQueue] on the device:
+
+[source,swift]
+----
+guard let commandQueue = device.makeCommandQueue() else {
+  return
+}
+----
+
+As with the MTLDevice instance, you will want to just create one command queue at the beginning of your app, then keep a reference to it for the entire lifetime of your application.
+
+=== MTKView
+https://developer.apple.com/documentation/metalkit/mtkview[MTKView] is part of https://developer.apple.com/documentation/metalkit[MetalKit] and provides a friendly wrapper around setting up a view that can be used to render Metal content.
+The view automatically manages a CAMetalLayer instance to draw to and also provides the mechanism to inform the app that the view needs to be re-rendered, either automatically 60 times a second or on demand when the code explicitly says to update.
+
+The main things you will do with MTKView are specifying the device, the clear color to use when clearing the screen each frame, along with the format to use for the output buffer and depth stencil (used to determine if parts of an object are visible or not during rendering).
+
+[source,swift]
+----
+mtkView.device = device
+mtkView.clearColor = MTLClearColor(
+  red: 1.0,
+  green: 104.0/255.0,
+  blue: 55.0/255.0,
+  alpha: 1.0
+)
+
+mtkView.colorPixelFormat = .bgra8Unorm_srgb
+mtkView.depthStencilPixelFormat = .depth32Float
+----
+
+In order to get the frame and view size change notification you need to implement the MTKViewDelegate protocol.
+
+=== MTKViewDelegate
+https://developer.apple.com/documentation/metalkit/mtkviewdelegate[MTKViewDelegate] is a simple protocol consisting of two methods:
+
+https://developer.apple.com/documentation/metalkit/mtkviewdelegate/1536015-mtkview[mtkView(_:drawableSizeWillChange:):]::
+This will be called when the view changes size. You can add code here to update any classes you have that might depend on the size or aspect ratio of the MTKView.
+
+https://developer.apple.com/documentation/metalkit/mtkviewdelegate/1535942-draw[draw(in:)]::
+This function by default will be called once per frame.
+This is where you will put all of your drawing code to render your scene every frame and update animations etc.
+By default this method is called 60 times a second, based on the https://developer.apple.com/documentation/metalkit/mtkview/1536027-preferredframespersecond[preferredFramesPerSecond] property of MKTView.
+You can also configure if the method should only be called is the user explicitly indicates the view has changed by calling setNeedsDisplay(), see https://developer.apple.com/documentation/metalkit/mtkview/1535993-enablesetneedsdisplay[this] property for more detail.
+
+=== MTLDrawable
+A https://developer.apple.com/documentation/metal/mtldrawable[MTLDrawable] provides a MTLTexture instance that can be used as a render target to present the output from your shaders.
+Basically this is the output where your shaders will write the final pixel values to then Metal will show this buffer on the screen.
+
+Once you are ready to show the drawable on the screen you call the https://developer.apple.com/documentation/metal/mtldrawable/1470284-present[present()] method that indicates this drawable should be shown on the screen as soon as all commands in the command queue relating to this drawable have been executed.
+
+Each frame you will want to get a reference to a drawable that can be used to render new content to.
+The MTKView has a https://developer.apple.com/documentation/metalkit/mtkview/1535971-currentdrawable[currentDrawable] property that will return a drawable to you that can be used.
+
+[source,swift]
+----
+guard let drawable = view.currentDrawable else {
+  return
+}
+
+guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+  return
+}
+
+// Send drawing commands to the GPU
+
+// Indicate the drawable should present its content ASAP after processing commands
+commandBuffer.present(drawable)
+commandBuffer.commit()
+----
+
+=== MTLRenderPipelineState / MTLRenderPipelineDescriptor
+Before we discuss these objects, first there is a common pattern used in the Metal API that we should quickly touch on that will make the API a lot clearer.
+A lot of the time when you want to create a FooObject, you first create a FooDescriptor and populate the descriptor with all of the required configuration information, then pass the FooDescriptor to the method used to create the object.
+The descriptor can be though of as a blueprint on how to create the object.
+Once you have created the object the descriptor is no longer needed, you could update it and create a new object with it if you had several objects that were similar, but generally once you create the object the descriptor can be discarded.
+
+https://developer.apple.com/documentation/metal/mtlrenderpipelinestate[MTLRenderPipelineState] main purpose is to contain information about which vertex + fragment shader to use when you are issuing drawing commands to the GPU.
+For example, you may have one set of shaders that renders models as a https://en.wikipedia.org/wiki/Cel_shading[Toon Shader] and another set of shaders that renders models using realistic materials found in the world, https://en.wikipedia.org/wiki/Physically_based_rendering[Physically Based Rendering] shaders.
+In this case you would have multiple MTLRenderPipeline instances.
+Before you tell the GPU to draw any triangles, you set the desired MTLRenderPipelineState as being the active state then render the model.
+
+Once again, as we saw with MTLDevice and MTLCommandQueue you will want to create all of your MTLRenderPipelineState objects as soon as possible, because they could include an expensive shader compilation, then hang on to references to these states throughout the lifetime of the application.
+
+The https://developer.apple.com/documentation/metal/mtlrenderpipelinedescriptor[MTLRenderPipelineDescriptor] type is used to specify which vertex and fragment shader to use when creating the state object.
+At it's simplest level you can create it as follows:
+
+[source,swift]
+----
+guard let defaultLibrary = device.makeDefaultLibrary() else { #<1>
+  print("Unable to load Metal shaders")
+  return
+}
+
+guard let fragment = defaultLibrary.makeFunction(name: "fragment_function") else { #<2>
+  print("Did not find fragment function")
+  return
+}
+guard let vertex = defaultLibrary.makeFunction(name: "vertex_function") else { #<3>
+  print("Did not find vertex function")
+  return
+}
+
+let descriptor = MTLRenderPipelineDescriptor()
+descriptor.vertexFunction = vertex
+descriptor.fragmentFunction = fragment
+descriptor.colorAttachments[0].pixelFormat = metalKitView.colorPixelFormat #<4>
+
+// We will cover this later, but this specifies how the vertex data is laid out in memory.
+// descriptor.vertexDescriptor = vertexDescriptor
+
+guard let state = try? device.makeRenderPipelineState(descriptor: descriptor) else {
+  print("Unable to compile shaders")
+  return
+}
+----
+<1> All .metal files in your xcode project are compiled into a default library object that you then access using the makeDefaultLibrary function.
+<2> fragment_function is the name of your fragment shader in the .metal file.
+<3> vertex_function is the name of your vertex shader in the .metal file.
+<4> You will have previously set the format for the output buffer earlier in your code.
+
+=== MTLCommandBuffer
+
+Generally you will create a new command buffer at the beginning of a frame and fill it with commands to send to the GPU.
+You then commit the buffer and after that can release the reference to the object.
+
+[source, swift]
+----
+// At the start of a new frame
+
+guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+  return
+}
+
+// Create some commands and add to the buffer e.g. draw triangles etc.
+
+// Commit the commands to the GPU
+commandBuffer.commit()
+----
+
+=== MTLRenderPassDescriptor
+The https://developer.apple.com/documentation/metal/mtlrenderpassdescriptor[MTLRenderPassDescriptor] contains information on which render targets should be used to render new content to.
+
+Using MTKView from the MetalKit framework makes this easy.
+We don't have to configure this object ourselves, we can just call the currentRenderPassDescriptor property on MTKView and it will return a descriptor to us that already has a drawable set on the color attachment.
+
+Another important setting is the load and store action.
+These specify what should happen at the start of a rendering pass and what should happen to the pixel values after the content has been displayed on the screen.
+There are three values for the load action:
+
+clear:: The existing content of the buffer should be overwritten. The value you set in the MTKVew clearColor property will be set on every pixel.
+dontCare:: Each pixel in the buffer can have any value we don't care what they are. This is an option you can use if your code is going to write to every pixel in the buffer.
+load:: The existing content of the buffer should be preserved for the start of this pass.
+
+Mostly you probably just want to use clear to clear out the contents.
+
+
+=== MTLRenderPassCommandEncoder
+Once you have configured your render pass descriptor you can create a MTLRenderPassCommandEncoder.
+This is the final piece of the rendering puzzle.
+So we have gone from setting up our device, a command queue, created a new buffer to put our commands in, then finally chosen which buffers we should write to in our RenderPassDescriptor, now we want to send actual draw commands to the GPU.
+
+The render pass encoder will typically set:
+
+- Which vertex + fragment shader you want to use
+- Bind the vertex buffers with vertex data to particular buffers so they can be accessed by the shaders
+- Bind any additional buffers, like uniform buffers passing projection matrices etc.
+- Issue the actual draw call, that specifies how many primitives to draw and what kind of primitives they are, triangles, lines.
+
+Metal is very efficient due to all the batching of the commands, so you can issue tens of thousands of draw calls (depending on the complexity of the shaders) if desired. Ideally though you keep this number as low as possible.
+
+An example of setting properties on the render pass encoder is shown below:
+
+[source,swift]
+----
+guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else {
+  return
+}
+
+encoder.setVertexBuffer(uniformBuffer, offset: 0, index: 0)
+encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 1)
+
+encoder.setRenderPipelineState(renderPipelineState)
+encoder.setFragmentTexture(texture, index: 0)
+encoder.setFragmentSamplerState(sampler, index: 0)
+
+encoder.drawPrimitives(
+  type: .triangles,
+  vertexStart: 0,
+  vertexCount: vertexCount,
+  instanceCount: 1
+)
+
+encoder.endEncoding()
+----
+
+=== MTLTexture / MTKTextureLoader
+Textures are a very important of any 3D app.
+Once we have an MTLTexture we can bind it to our fragment shader and access it from the fragment shader to use to color the output pixels.
+
+For example, here we can see the basic 3D model of a tank without and texturing, then the same model with texturing applied below.
+
+image::tankwireframe.jpg[]
+
+.Textured Tank (https://sketchfab.com/3d-models/metal-slug-rebel-tank-comic-style-1b06956e7ecd407693e91645f07d25ac[Sketchfab])
+image::tanktextured.jpg[]
+
+How this works is that for each vertex as well as specifying a 3D x,y,z value we also specify an offset into a texture that should be used to texture that particular part of the model, known as texture coordinates (u, v).
+
+In Metal we can specify texture coordinates in either pixel values or normalized values.
+Normalized texture coordinates are simply values from 0 to 1, with the top left being (0, 0) and the bottom right being (1,1).
+
+image::normalizedtexcoords.jpg[]
+
+It's simple to load a texture using the https://developer.apple.com/documentation/metalkit/mtktextureloader[MTKTextureLoader] class from MetalKit.
+There are a number of options to load from a URL, or from the app bundle.
+
+.Example of loading a texture from the main bundle.
+[source, swift]
+----
+let texLoader = MTKTextureLoader(device: device)
+
+return try? texLoader.newTexture(
+  name: "myImage",
+  scaleFactor: 1.0,
+  bundle: nil,
+  options: [:]
+)
+----
+
+Once we have the MTLTexture instance there is one more piece we need, a sampler.
+
+=== MTLSamplerDescriptor / MTLSamplerState
+
+Once you have a texture you need to tell Metal how it should calculate the pixel color for different situations.
+For example is the caller going to pass normalized texture coordinates (0,0 -> 1,1) to access the pixels or actual pixel offsets (100, 250).
+What should happen if the caller passes in a texture coordinate outside of the texture bounds e.g. (1.25, 0.9).
+How should the GPU calculate pixel values if the texture is much larger or smaller than the size it is being displayed on the screen and the texture has to be scaled up or down.
+
+All these settings we specify in a MTLSamplerDescriptor then use that to create the MTLSamplerState.
+
+.Creating a new sampler state
+[source,swift]
+----
+let samplerDescriptor = MTLSamplerDescriptor()
+samplerDescriptor.normalizedCoordinates = true
+samplerDescriptor.minFilter = .linear
+samplerDescriptor.magFilter = .linear
+samplerDescriptor.mipFilter = .linear
+guard let sampler = device.makeSamplerState(descriptor: samplerDescriptor) else {
+  return
+}
+----
+
+You will want to keep the MTLSamplerState object around as long as you need the MTLTextureInstance. You can also use the same sampler with multiple textures if they all have the same settings.
+
+Once you have the sampler state, you will want to pass both the texture and the sampler to the fragment shader, using your MTLRenderPassEncoder instance:
+
+[source,swift]
+----
+encoder.setFragmentTexture(texture, index: 0)
+encoder.setFragmentSamplerState(sampler, index: 0)
+----
+
+Here we bind both the texture and sampler to slots 0, then in the fragment shader you can access them both to choose a pixel value e.g.
+
+.Example fragment shader in Metal Shader Language
+[source,msl]
+----
+fragment float4 texture_fragment( #<1>
+  VertexOut fragIn [[stage_in]], #<2>
+  texture2d<float, access::sample> diffuseTexture [[texture(0)]], #<3>
+  sampler diffuseSampler [[sampler(0)]]) { #<4>
+
+  return diffuseTexture.sample(diffuseSampler, fragIn.tex).rgba; #<5>
+}
+----
+<1> You specify a fragment shader by prefixing the function with the "fragment" keyword
+<2> The input to the fragment shader is the output from the Vertex shader, which has been interpolated by the GPU so that the values in the vertex are interpolated across the rasterized values sent to the pixel shader.
+<3> Our texture is bound to texture slot 0.
+<4> Our sampler is bound to sampler slot 0
+<5> We access the pixel value of the texture by passing in the sampler and the texture coordinates (u,v) to the sample method.
+
+== Memory Layout
+
+=== Size / Stride / Alignment
+Before we talk about the last type MTLVertexDescriptor, it is important that we understand how Swift + Metal layout the underlying bytes for the data that we use to communicate between the Swift code and the Vertex shader.
+
+Since we are creating raw blocks of memory in our buffers and populating them with values, we need to be very sure that the layout of the bytes we write in to the buffer in Swift matches up with what the Vertex shader expects for the layout of the input structs.
+If these don't line up properly you will end up with garbage output on your screen.
+
+In Swift we have the https://developer.apple.com/documentation/swift/memorylayout[MemoryLayout] enum that can be used to query how different types are laid out in memory.
+There are three different terms to discuss when talking about memory:
+
+Size::
+Size represents the total number of bytes that must be copied in order to preserve the value of the item.
+For example, if you have an instance of a Float, a Float requires 4 bytes in memory, therefore if you have a pointer to the start of the float value you need to copy 4 bytes from the start in order to transfer it somewhere else.
+
+Stride::
+Stride represents the total number of bytes from the start of one instance of a type to the next in a contiguous block of memory like an array.
+So if we have a type T and an array of instances e.g [T0, T1, T2 ...] for reasons we see below if you simply sum up all the sizes of the fields in the type that might not be the same as the memory offset of T1, due to extra empty padding being added between the fields of the type.
+It is true that stride(T) >= size(T).
+
+Alignment::
+When the computer reads or writes values it does it in chunks of memory, maybe 4 bytes, 8 bytes or more.
+Most CPUs can only handle reading/writing data on these chunk boundaries, you can't write a value across a boundary.
+For example, if you have an Int that is 4 bytes, we could write it at memory address 0, or memory address 4, but if we were to try to write the int starting at memory address 2 this would potentially cause a crash across a chunk boundary.
+Therefore when writing values to memory we need to know the alignment requirements of the type to see what addresses we are allowed to write to.
+
+Let us look at an example to clarify these terms.
+Image we have a struct that contains an Int and a Bool, looking at the size/stride/alignment values for Int and Bool individually we see that a Bool takes 1 byte to store and that an Int (in this case a 64bit int) takes 8 bytes.
+The size, stride and alignment values are all the same.
+
+[source,swift]
+----
+MemoryLayout<Bool>.size       // 1
+MemoryLayout<Bool>.stride     // 1
+MemoryLayout<Bool>.alignment  // 1
+
+MemoryLayout<Int>.size        // 8
+MemoryLayout<Int>.stride      // 8
+MemoryLayout<Int>.alignment   // 8
+----
+
+Now let's define an Account struct that contains an amount and an active field.
+Looking at the values above, we should be able to add up the Int + Bool values and get a size of 9 bytes for this struct, but what about the stride and alignment values?
+
+[source,swift]
+----
+struct Account {
+  let amount: Int
+  let active: Bool
+}
+
+MemoryLayout<Account>.size       // 9
+MemoryLayout<Account>.stride     // 16
+MemoryLayout<Account>.alignment  // 8
+----
+
+As you can see, the stride is 16 bytes and the alignment is 8.
+What this means is that if we have an array of Account structs and wanted to copy their memory to another location, we couldn't just say copy (9 * numberItems) bytes, we would end up not copying all the bytes but infact we have to copy (16 * numberItems) bytes.
+
+This is how an array of Account would look like in memory:
+
+I == Int Byte, B == Bool Byte, P == Padding Byte
+
+I I I I I I I I B P P P P P P P I I I I I I I I B P P P P P P P ...
+
+The reason for the empty padding at the end of the first Account instance is that as we saw above the alignment of the Int type is 8, what that means is it can only be written to addresses that are divisible by 8.
+As we can see if we try to write it to byte 10 then it will be spread across the chunk boundaries, hence it is written at the first available address that is divisible by 8 after the end of the first account instance, which is byte 16.
+
+Now you can see why when you put items together in memory contiguously you might have holes that you need to take account of when copying.
+In our case, we just need to always make sure that when we are copying data into our buffers we use the "stride" value not the "size".
+
+So now what happens if we swap the order of the fields in our Account type?
+Instead lets define it as:
+
+[source,swift]
+----
+struct Account {
+  let isActive: Bool
+  let amount: Int
+}
+
+MemoryLayout<Account>.size       // 16
+MemoryLayout<Account>.stride     // 16
+MemoryLayout<Account>.alignment  // 8
+----
+
+Interesting, now the size changed to 16 instead of 8, but the stride stayed the same.
+Remember that the size field says what the total number of bytes you need to copy to copy all of the data in a single instance of the struct.
+What has happened is that the Bool alignment is 1 so it happily goes in byte 1 (it could be written to byte 2, 3, 4 , 5 etc and so on no problem).
+However the Int alignment is 8, so it can't be copied into byte 2, that is not divisible by 8, so we have to add some padding until we get to byte 8 to write it.
+
+Now the layout in memory looks like:
+
+I == Int Byte, B == Bool Byte, P == Padding Byte
+
+B P P P P P P P I I I I I I I I B P P P P P P P I I I I I I I I ...
+
+=== floatN / packed_floatN
+
+Given the information above, the main point to take away is to make sure when you are writing values to a buffer in Swift and defining structs in a shader, you understand the size, stride and alignment of the types you are using, on both sides.
+
+There are some common types you will use in a shader, namely float2, float3, float4 for your position, normal, color, texture information etc.
+These let you use vector float data like:
+
+.Shaders.metal
+[source,msl]
+----
+float3 position = float3(1.0, 2.0, 3.0);
+
+// position.x, position.y, position.z
+----
+
+At first glance you might think those structs are 8, 12 and 16 bytes long (2 * 4, 3 * 4, 4 * 4), seems reasonable, so you go ahead and define a struct in MSL that will be your incoming vertex data.
+
+.Shaders.metal
+[source,msl]
+----
+struct VertexIn {
+  float3 position;
+};
+----
+
+Then on the Swift side, you create a vertex buffer and write individual floats in to the buffer.
+To do this we will just create a struct with three floats in it that will then be copied in to the buffer.
+We populate the buffer with some points that create a simple quad centered around (0,0,-5)
+
+.Renderer.swift
+[source,swift]
+----
+struct Vertex {
+  let x, y, z: Float
+
+  func toArray() -> [Float] {
+    return [x, y, z]
+  }
+}
+
+// Define a simple quad with two triangles
+// x1 ------ x2
+// |         |
+// |         |
+// x0 ------ x3
+let halfSize: Float = 0.5
+let z: Float = -5
+let vertices: [Vertex] = [
+  // Triangle 0
+  Vertex(x: -halfSize, y: -halfSize, z: z),  // x0
+  Vertex(x: halfSize, y: halfSize, z: z),    // x2
+  Vertex(x: -halfSize, y: halfSize, z: z),   // x1
+
+  // Triangle 1
+  Vertex(x: -halfSize, y: -halfSize, z: z),  // x0
+  Vertex(x: halfSize, y: -halfSize, z: z),   // x3
+  Vertex(x: halfSize, y: halfSize, z: z),    // x2
+]
+
+// Put all the values in to one array
+var data = [Float]()
+for vertex in vertices {
+  data += vertex.toArray()
+}
+
+// Create the buffer
+let size = MemoryLayout<Vertex>.stride * vertices.count
+meshBuffer = device.makeBuffer(bytes: data, length: size, options: [])
+
+----
+
+We then define a simple fragment shader that just returns the color red, and a simple vertex shader. Let's define the vertex shader without using vertex descriptors this time:
+
+.Shaders.metal
+[source,msl]
+----
+struct VertexIn {
+  float3 position; #<1>
+};
+
+struct VertexOut {
+  float4 position [[position]];
+};
+
+vertex VertexOut vertexShader(
+  const device VertexIn* vertices [[buffer(0)]], #<2>
+  constant Uniforms & uniforms [[buffer(1)]],
+  unsigned int vid [[vertex_id]]) #<3>
+{
+  VertexOut vOut;
+  float4 position = float4(vertices[vid].position, 1.0);
+  vOut.position = uniforms.projectionMatrix * uniforms.modelViewMatrix * position;
+  return vOut;
+}
+
+fragment float4 fragmentShader(VertexOut in [[stage_in]]) {
+  return float4(1.0, 0, 0, 1.0); #<4>
+}
+----
+<1> This is the definition of the vertex data in the vertex buffer
+<2> Pointer to the vertex buffer
+<3> The vertex id tells us which vertex in the buffer we should be operating on
+<4> Simply return red for all the pixels
+
+Here is what we are expecting to see, a red quad in the middle of the screen:
+
+image::quad-good.jpg[]
+
+However when we run the code we end up seeing:
+
+image::quad-bad.jpg[]
+
+That's annoying. So what happened, somehow the x,y,z values we passed to the shader are incorrect.
+We go back to the Metal Shader Language specification and look at the size/alignment values for the floatN types and we see:
+
+.The size and alignment of the float vector types in Metal Shader Language (https://developer.apple.com/metal/Metal-Shading-Language-Specification.pdf[Source])
+image::msl-float-memory.jpg[]
+
+Notice how the float3 actually has an alignment of 16 bytes, not 12 as we expected!
+Even though it only exposes 3 floats in the code, it is expecting there is an extra byte of padding after each value.
+Knowing this we go back to the code and change our struct to add an extra float value in the array:
+
+.Renderer.swift
+[source,swift]
+----
+struct Vertex {
+  let x, y, z: Float
+  let padding: Float = 0.0
+
+  func toArray() -> [Float] {
+    return [x, y, z, padding]
+  }
+}
+----
+
+Now everything renders as expected.
+
+However instead of updating our Vertex structure in Swift, we could leave it as it was without the padding value and choose the packed_float3 type instead of float3 in our shader.
+The packed_float3 type specifies we are expecting 3 float values for each item in the array without any padding.
+
+.Shaders.metal
+[source,msl]
+----
+struct VertexIn {
+  packed_float3 position;
+};
+----
+
+=== SIMD
+A quick note on SIMD types.
+Swift added native support for https://developer.apple.com/documentation/swift/simd[SIMD] data types.
+SIMD stands for Single Instruction Multiple Data, they are hardware supported operations that allow multiple operations on data at once.
+
+For example, if we had a 3D position stored as an x, y and z value, we could update the position by adding another value:
+
+[source,swift]
+----
+let x = 1.0
+let y = 2.0
+let z = 3.0
+
+let xDelta = 5.0
+let yDelta = 10.0
+let zDelta = 15.0
+
+let newX = x + xDelta
+let newY = y + yDelta
+let newZ = z + zDelta
+----
+
+Here we take each individual component and add some delta to it to create a new value.
+However if we use SIMD types we can update all three values at once in a single CPU instruction
+
+[source,swift]
+----
+let pos: SIMD3<Float> = [1.0, 2.0, 3.0]
+let delta: SIMD3<Float> = [5.0, 10.0, 15.0]
+let newPos = pos + delta
+----
+
+As well as providing a performance benefit, it's easier to code with the SIMD types to perform additions, multiplications and vector/matrix operations so you will see them used in the code.
+
+Note that as well as Swift supporting SIMD, the types also match the floatN types we saw in our shaders, so you can directly copy an array of SIMD instances and reference them in your shader using floatN.
+Also the SIMD3<Float> type also has a stride of 16 not 12 :)
+
+[source,swift]
+----
+MemoryLayout<SIMD3<Float>>.size       // 16
+MemoryLayout<SIMD3<Float>>.alignment  // 16
+MemoryLayout<SIMD3<Float>>.stride     // 16
+----
+
+== MTLVertexDescriptor
+
+A https://developer.apple.com/documentation/metal/mtlvertexdescriptor[MTLVertexDescriptor] instance lets us tell Metal how the data in the vertex buffer is laid out in memory so that in the vertex shader we can access it correctly.
+
+As we have seen above we don't actually need vertex descriptors to use Metal shaders, but they have some benefits in that you can change the layout and organization of your buffer data without affecting the vertex shader as much.
+This lets you do things like use multiple individual buffers for data, one for positions, one for color, one for normals, instead of interleaving all of those values in one buffer.
+
+The general idea is that the vertex descriptor says what data is in the buffer, what type of data it is float3, float4 etc then also which buffers the data is bound to.
+This information lets us simplify the vertex shader code.
+
+As an example, let's take our simple quad above, now we define an MTLVertexDescriptor:
+
+.Renderer.swift
+[source,swift]
+----
+let descriptor = MTLVertexDescriptor()
+
+// position x,y,z
+descriptor.attributes[0].format = .float3
+descriptor.attributes[0].bufferIndex = 0
+descriptor.attributes[0].offset = 0
+descriptor.layouts[0].stride = MemoryLayout<Vertex>.stride
+
+pipelineDescriptor.vertexDescriptor = descriptor
+----
+
+Now in our shaders we update the VertexIn struct to add an attribute that tells it which attribute in the descriptor it maps to.
+We also update our vertex function definition to take a different input with a stage_in attribute.
+This just tells the Metal shader compiler to automatically figure out from the descriptor how to piece together this struct, also no more vertex_id is needed.
+
+.Shaders.metal
+[source,msl]
+----
+struct VertexIn {
+  float3 position [[attribute(0)]]; #<1>
+};
+
+struct VertexOut {
+  float4 position [[position]];
+};
+
+vertex VertexOut vertexShader(
+  const VertexIn vIn [[stage_in]],
+  constant Uniforms & uniforms [[buffer(1)]])
+{
+  VertexOut vOut;
+  float4 position = float4(vIn.position, 1.0);
+  vOut.position = uniforms.projectionMatrix * uniforms.modelViewMatrix * position;
+  return vOut;
+}
+----
+<1> Notice how we are using float3 and not packed_float3, this is because packed_floatN types are not allowed with attributes.
+
+IMPORTANT: There is one important thing to note here, which is the main take away.
+On the Swift side we are passing in x,y,z,x,y,z,x,y,z in the vertex buffer, as we saw float3 in the shader is actually expecting 4 floats for each float3 instance (alignment of 16), so this code broke before but now it works, how?
+
+Turns out if you use a MTLVertexDescriptor and specify .float3 as the format, the Metal Shader can see that on the client side you are passing just 3 floats but the shader is expecting 4 under the hood and will just pad the last float with 0 automatically for you, magic!
+This was a bit confusing when I first ran this code and expected it to break.
+See the docs on https://developer.apple.com/documentation/metal/mtlvertexattributedescriptor/1516081-format[MTLVertexAttributeDescriptor] for more information.
+
+
+
