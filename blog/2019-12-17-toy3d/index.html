@@ -861,15 +861,22 @@ We could use a left handed coordinate system, it doesn&#8217;t really matter sin
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Mat4</span> <span class="p">{</span>
 
   <span class="k">let</span> <span class="nv">vLook</span> <span class="o">=</span> <span class="nf">normalize</span><span class="p">(</span><span class="n">look</span><span class="p">)</span>
-  <span class="k">let</span> <span class="nv">vSide</span> <span class="o">=</span> <span class="nf">normalize</span><span class="p">(</span><span class="nf">cross</span><span class="p">(</span><span class="n">vLook</span><span class="p">,</span> <span class="nf">normalize</span><span class="p">(</span><span class="n">up</span><span class="p">)))</span>
-  <span class="k">let</span> <span class="nv">vUp</span> <span class="o">=</span> <span class="nf">normalize</span><span class="p">(</span><span class="nf">cross</span><span class="p">(</span><span class="n">vSide</span><span class="p">,</span> <span class="n">vLook</span><span class="p">))</span>
+  <span class="k">let</span> <span class="nv">vSide</span> <span class="o">=</span> <span class="nf">cross</span><span class="p">(</span><span class="n">vLook</span><span class="p">,</span> <span class="nf">normalize</span><span class="p">(</span><span class="n">up</span><span class="p">))</span>
+  <span class="k">let</span> <span class="nv">vUp</span> <span class="o">=</span> <span class="nf">cross</span><span class="p">(</span><span class="n">vSide</span><span class="p">,</span> <span class="n">vLook</span><span class="p">)</span>
 
-  <span class="k">return</span> <span class="kt">Mat4</span><span class="p">([</span>
+  <span class="k">var</span> <span class="nv">m</span> <span class="o">=</span> <span class="kt">Mat4</span><span class="p">([</span>
     <span class="kt">Vec4</span><span class="p">(</span><span class="n">vSide</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
     <span class="kt">Vec4</span><span class="p">(</span><span class="n">vUp</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-    <span class="kt">Vec4</span><span class="p">(</span><span class="n">vLook</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-    <span class="kt">Vec4</span><span class="p">(</span><span class="o">-</span><span class="n">eye</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="kt">Vec4</span><span class="p">(</span><span class="o">-</span><span class="n">vLook</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="kt">Vec4</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
   <span class="p">])</span>
+  <span class="n">m</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">transpose</span>
+
+  <span class="k">let</span> <span class="nv">eyeInv</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="kt">Vec4</span><span class="p">(</span><span class="n">eye</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+  <span class="n">m</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">eyeInv</span><span class="o">.</span><span class="n">x</span>
+  <span class="n">m</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">eyeInv</span><span class="o">.</span><span class="n">y</span>
+  <span class="n">m</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">eyeInv</span><span class="o">.</span><span class="n">z</span>
+  <span class="k">return</span> <span class="n">m</span>
 <span class="p">}</span></code></pre>
 </div>
 </div>
