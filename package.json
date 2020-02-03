@@ -19,6 +19,6 @@
   "readmeFilename": "README.md",
   "gitHead": "ae595bab999bc2af21d8c6716b98a3d3bcd5e949",
   "dependencies": {
-    "serve": "~1.4.0"
+    "serve": "~11.2.0"
   }
 }
